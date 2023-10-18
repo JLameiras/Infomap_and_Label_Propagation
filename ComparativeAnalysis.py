@@ -4,27 +4,34 @@ import collections
 import infomap
 
 from networkx.algorithms.community import asyn_lpa_communities
+import networkx.algorithms as algorithms
+import networkx.algorithms.community.quality as measure
 import matplotlib.pyplot as pyplot
 import matplotlib.colors as colors
 
-import infomap
-import networkx.algorithms as algorithms
-import networkx.algorithms.community.quality as measure
-import collections
+from timeit import default_timer as timer
 
 
 class Graph:
-    def __init__(self):
+    def __init__(self, name):
         self.graph = networkx.Graph()
-
-    def setName(self, name):
         self.name = name
 
-    def createGraphFromEdgeList(self, filename):
-        
-        networkx.from_edgelist(open(filename, 'r'), self.graph)
-
+    def getGraph(self):
         return self.graph
+    
+    def getName(self):
+        return self.name
+
+    def createGraphFromEdgeList(self, filename):
+
+        file = open(filename, 'r')
+
+        for line in file.readlines():
+            vertices = line.split()
+            edge = (int(vertices[0]), int(vertices[1]))
+            self.graph.add_edge(*edge)
+
     
     def createGraphLFR(self, n, tau1, tau2, mu, average_degree, min_degree, max_degree,
                        min_community, max_community, tol, max_iters, seed):
@@ -34,10 +41,10 @@ class Graph:
         return self.graph
     
     def classify(self, report):
-        analysis = "Analyses of the network " + self.name + "\n" +\
+        analysis = "Analyses of the network " + self.getName() + "\n" +\
                         "Nodes: {}, Edges: {}, Self Loops: {}".format(self.graph.number_of_nodes(), self.graph.number_of_edges(), networkx.number_of_selfloops(self.graph)) + "\n" +\
-                        "Graph Type: " + "Directed And " if self.graph.is_directed() == True else "Undirected And " +\
-                        "Weighted" if networkx.is_weighted(self.graph) == True else "Non-Weighted" + "\n"                            
+                        "Graph Type: " + ("Directed And " if self.graph.is_directed() == True else "Undirected And ") +\
+                        ("Weighted" if networkx.is_weighted(self.graph) == True else "Non-Weighted") + "\n"                            
 
         # The rest might be too costly. Not all parameters matter
                
@@ -74,20 +81,18 @@ class Graph:
 
         report.write(analysis)
 
-
-class InfoMap:
-    def __init__(self, G):
-        self.graph = G
-
-    def findCommunities(self, G):
-        infomapWrapper = infomap.Infomap("--two-level --directed") # TODO Tweak this to improve solution
+        
+class Analyser:
+    def InfoMap(self, G,report):
+        # TODO Tweak this to improve solution after getting results
+        infomapWrapper = infomap.Infomap("--two-level --directed") 
 
         for e in G.edges():
             infomapWrapper.network.addLink(*e)
 
         infomapWrapper.run()
 
-        print("Found %d modules with codelength: %f" % (infomapWrapper.numTopModules(), infomapWrapper.codelength))
+        report.write("%d modules with codelength %f found\n" % (infomapWrapper.numTopModules(), infomapWrapper.codelength))
 
         # Set the community of each node in the graph
         communities = {}
@@ -96,18 +101,11 @@ class InfoMap:
 
         networkx.set_node_attributes(G, name='community', values=communities)
 
-        return infomapWrapper.numTopModules()
-
+        return infomapWrapper.numTopModules()   
     
-class LabelPropagation:
-    def __init__(self, G):
-        self.graph = G
-
-    def findCommunities(self, G, weight, seed):
+    def LabelPropagation(self, G, weight, seed):
         return asyn_lpa_communities(G, weight, seed)
     
-
-class Analyser:
     def sumDiff(self, G):
         communities = collections.defaultdict(lambda: list())
         for k, v in networkx.get_node_attributes(G, 'community').items():
@@ -141,27 +139,31 @@ class Analyser:
 
 
 def main():
-    graph = Graph()
     report = open("report.txt", 'a')
-
-    dataModels = ["data//club.txt"]
+    analyser = Analyser()
+    
+    edgeListModels = ["data//club.txt"]
     #TODO Use createGraphLFR to create graphs
 
-    for dataModel in dataModels: 
-        graph.setName(dataModel) 
-        graph.createGraphFromEdgeList(dataModel)
+    for edgeListModel in edgeListModels:         
+        graph = Graph(edgeListModel) 
+        graph.createGraphFromEdgeList(edgeListModel)
         graph.classify(report)
 
-        # InfoMap
-        infomap = InfoMap(graph)
-        # Measure performance here
-        infomap.findCommunities(graph)
+        # InfoMap - More stats in the stdout
+        start = timer()
+        infoMapCommunities = analyser.InfoMap(graph.getGraph(), report)
+        end = timer()
+        report.write("InfoMap processing time: "+ str(end - start) + "s" + "\n")
 
         # Label Propagation
-        labelpropagation = LabelPropagation(graph)
-        # Measure performance here
-        infomap.findCommunities(graph)
+        start = timer()
+        labelPropagationCommunities = analyser.LabelPropagation(graph.getGraph(), None, None)
+        end = timer()
+        report.write("Label Propagation processing time "+ str(end - start) + "s" + "\n")
+
+        report.write("\n")
      
 
-def __main__():
+if __name__ == '__main__':
     main()
