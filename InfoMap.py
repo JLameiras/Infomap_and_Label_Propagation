@@ -104,7 +104,7 @@ class InfoMap:
 
         return infomapWrapper.numTopModules()
 
-    # Only useful for small graphs
+    # REMOVE THIS BEFORE DELIVERY
     def drawNetwork(self, G):
         # position map
         pos = networkx.spring_layout(G)
@@ -185,59 +185,6 @@ class InfoMap:
         self.findCommunities(G)
         self.drawNetwork(G)
 
-    def getNumberOfConnectedComponents(self, G):
-        return algorithms.number_connected_components(G)
-
-    def getNumberOfCliques(self, G):
-        return algorithms.number_of_cliques(G)
-
-    def getNumberOfStronglyConnectedComponents(self, G):
-        return algorithms.number_strongly_connected_components(G)
-
-    def getNumberOfWeaklyConnectedComponents(self, G):
-        return algorithms.number_weakly_connected_components(G)
-
-    def getNumberOfIsolates(self, G):
-        return algorithms.number_of_isolates(G)
-
-    def getDegreeCentrality(self, G):
-        return algorithms.degree_centrality(G)
-
-    def getBetweenessCentrality(self, G):
-        return algorithms.betweenness_centrality(G)
-
-    def getAllPairsShortestPath(self, G):
-        return algorithms.all_pairs_shortest_path(G)
-
-    def getAllPairsNodeConnectivity(self, G):
-        return algorithms.all_pairs_node_connectivity(G)
-
-    def getClosenessCentrality(self, G):
-        return algorithms.closeness_centrality(G)
-
-    def getBridges(self, G):
-        return algorithms.bridges(G)
-
-    def getConnectedComponents(self, G):
-        return algorithms.connected_components(G)
-
-    def getDiameter(self, G):
-        return algorithms.diameter(G)
-
-    def getKatzCentrality(self, G):
-        return algorithms.katz_centrality
-
-    def getPageRank(self, G):
-        return algorithms.pagerank(G)
-
-    def getTriangles(self, G):
-        return algorithms.triangles(G)
-
-    def getNeighbours(self, G, vertex):
-        neighbourList = []
-        for neighbour in G:
-            neighbourList.append(neighbour)
-        return neighbourList
     
 class LabelPropagation:
     def __init__(self, G):
