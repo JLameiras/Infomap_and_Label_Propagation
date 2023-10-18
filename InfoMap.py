@@ -84,7 +84,7 @@ class InfoMap:
         self.graph = G
 
     def findCommunities(self, G):
-        infomapWrapper = infomap.Infomap("--two-level --directed") # Test
+        infomapWrapper = infomap.Infomap("--two-level --directed") # Tweak this to improve solution
 
         print("Building Infomap network from a NetworkX graph...")
         for e in G.edges():
@@ -145,8 +145,6 @@ class InfoMap:
         pyplot.savefig("graph_draw.png")
         pyplot.show()
 
-    # Everything cleaned up until here!
-
     def output(self, G):
         self.findCommunities(G)
 
@@ -180,11 +178,6 @@ class InfoMap:
             print(f'count{count},community{communitie}', end='\n')
         print(self.cal_Q(communities.values()))
 
-
-    def visualize(self, G):
-        self.findCommunities(G)
-        self.drawNetwork(G)
-
     
 class LabelPropagation:
     def __init__(self, G):
@@ -209,7 +202,6 @@ def main():
 
     a = InfoMap(graph)
     # a.findCommunities(graph)
-    # a.visualize(graph)
     a.output(graph)
     # a.printCom(graph)
 
