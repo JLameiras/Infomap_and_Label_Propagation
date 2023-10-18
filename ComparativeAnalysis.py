@@ -12,10 +12,6 @@ import networkx.algorithms as algorithms
 import networkx.algorithms.community.quality as measure
 import collections
 
-# The findCommunities and drawNetwork of the InfoMap class are adaptations of the following example:
-# github.com/chrisbloecker/infomap-bipartite/blob/master/examples/python/infomap-examples.ipynb
-# Please note that the original code was not up to date with the InfoMap's python module.
-
 
 class Graph:
     def __init__(self):
@@ -84,13 +80,11 @@ class InfoMap:
         self.graph = G
 
     def findCommunities(self, G):
-        infomapWrapper = infomap.Infomap("--two-level --directed") # Tweak this to improve solution
+        infomapWrapper = infomap.Infomap("--two-level --directed") # TODO Tweak this to improve solution
 
-        print("Building Infomap network from a NetworkX graph...")
         for e in G.edges():
             infomapWrapper.network.addLink(*e)
 
-        print("Find communities with Infomap...")
         infomapWrapper.run()
 
         print("Found %d modules with codelength: %f" % (infomapWrapper.numTopModules(), infomapWrapper.codelength))
@@ -103,47 +97,6 @@ class InfoMap:
         networkx.set_node_attributes(G, name='community', values=communities)
 
         return infomapWrapper.numTopModules()
-
-    # REMOVE THIS BEFORE DELIVERY
-    def drawNetwork(self, G):
-        # position map
-        pos = networkx.spring_layout(G)
-        # community ids
-        communities = [v for k, v in networkx.get_node_attributes(G, 'community').items()]
-        numCommunities = max(communities) + 1
-        # color map from http://colorbrewer2.org/
-        cmapLight = colors.ListedColormap(['#a6cee3', '#b2df8a', '#fb9a99', '#fdbf6f', '#cab2d6'],
-                                     'indexed', numCommunities)
-        cmapDark = colors.ListedColormap(['#1f78b4', '#33a02c', '#e31a1c', '#ff7f00', '#6a3d9a'],
-                                    'indexed', numCommunities)
-
-        # Draw edges
-        networkx.draw_networkx_edges(G, pos)
-
-        # Draw nodes
-        nodeCollection = networkx.draw_networkx_nodes(G,
-                                                           pos=pos,
-                                                           node_color=communities,
-                                                           cmap=cmapLight
-                                                           )
-        # Set node border color to the darker shade
-        darkColors = [cmapDark(v) for v in communities]
-        nodeCollection.set_edgecolor(darkColors)
-
-        # Draw node labels
-        for n in G.nodes():
-            pyplot.annotate(n,
-                            xy=pos[n],
-                            textcoords='offset points',
-                            horizontalalignment='center',
-                            verticalalignment='center',
-                            xytext=[0, 0],
-                            color=cmapDark(communities[n - 1])
-                            )
-
-        pyplot.axis('off')
-        pyplot.savefig("graph_draw.png")
-        pyplot.show()
 
     
 class LabelPropagation:
@@ -208,7 +161,6 @@ def main():
         labelpropagation = LabelPropagation(graph)
         # Measure performance here
         infomap.findCommunities(graph)
-
      
 
 def __main__():
