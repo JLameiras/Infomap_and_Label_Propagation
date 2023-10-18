@@ -1,4 +1,8 @@
 import networkx
+import collections
+import infomap
+
+from networkx.algorithms.community import asyn_lpa_communities
 import matplotlib.pyplot as pyplot
 import matplotlib.colors as colors
 
@@ -19,6 +23,13 @@ class Graph:
     def createGraphFromEdgeList(self, filename):
         
         networkx.from_edgelist(open(filename, 'r'), self.graph)
+
+        return self.graph
+    
+    def createGraphLFR(self, n, tau1, tau2, mu, average_degree, min_degree, max_degree,
+                       min_community, max_community, tol, max_iters, seed):
+            
+        self.graph = networkx.LFR_benchmark_graph(n, tau1, tau2, mu, average_degree, min_degree, max_degree,min_community, max_community, tol, max_iters, seed)
 
         return self.graph
 
@@ -182,6 +193,13 @@ class InfoMap:
         for neighbour in G:
             neighbourList.append(neighbour)
         return neighbourList
+    
+class LabelPropagation:
+    def __init__(self, G):
+        self.graph = G
+
+    def findCommunities(self, G, weight, seed):
+        return asyn_lpa_communities(G, weight, seed)
 
 
 # results = open("results3.txt", 'a')
