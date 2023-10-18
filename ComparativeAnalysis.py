@@ -109,29 +109,27 @@ class Analyser:
         graph.setPartition()
     
     def ratePartition(self, graph, report):
-        # self.sumDiff(graph, report)
+        self.adaptedMancoridisMetric(graph, report)
         self.partition_quality(graph, report)
 
-    def sumDiff(self, graph, report):# -> Any | int:
+    def adaptedMancoridisMetric(self, graph, report):
         sumIntraClusterDensity = 0
         sumInterClusterDensity = 0
 
         for community in graph.getPartition():
-            communitySubGraph = graph.getGraph().subgraph(community)
-            communityAntiSubGraph = graph.getGraph().remove_nodes_from(community)
             communityNodeNumber = len(community)
 
             # Also known as Internal Density
-            internalEdges = communitySubGraph.number_of_edges()
+            internalEdges = graph.getGraph().subgraph(community).number_of_edges()
             maxPossibleInternalEdges = communityNodeNumber * (communityNodeNumber - 1) / (1 if graph.getGraph().is_directed() == True else 2)
             sumIntraClusterDensity += internalEdges / maxPossibleInternalEdges
 
-            # Also known as cut ration
-            interClusterEdges = len(list(networkx.edge_boundary(communitySubGraph, communityAntiSubGraph)))
-            maxPossibleInterClusterEdges = communityNodeNumber * (graph.getGraph().size() - communityNodeNumber)
+            # Also known as Cut Ration
+            interClusterEdges = len(list(networkx.edge_boundary(graph.getGraph(), community, [x for x in graph.getGraph().nodes() if x not in community])))
+            maxPossibleInterClusterEdges = communityNodeNumber * (graph.getGraph().size() - communityNodeNumber) * (2 if graph.getGraph().is_directed() == True else 1)
             sumInterClusterDensity += interClusterEdges / maxPossibleInterClusterEdges
 
-        report.write("Adapted mancoridis metric: sumIntraClusterDensity {} - sumInterClusterDensity {} = {}\n".
+        report.write("Adapted Mancoridis metric: sumIntraClusterDensity {} - sumInterClusterDensity {} = {}\n".
                      format(sumIntraClusterDensity, sumInterClusterDensity, sumIntraClusterDensity - sumInterClusterDensity))
     
     def partition_quality(self, graph, report):
