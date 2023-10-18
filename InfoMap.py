@@ -3,8 +3,8 @@ import matplotlib.pyplot as pyplot
 import matplotlib.colors as colors
 
 import infomap
-import igraph
 import networkx.algorithms as algorithms
+import networkx.algorithms.community.quality as measure
 import collections
 
 # The findCommunities and drawNetwork of the InfoMap class are adaptations of the following example:
@@ -91,6 +91,27 @@ class InfoMap:
 
     # Everything cleaned up until here!
 
+    def output(self, G):
+        self.findCommunities(G)
+
+        communities = collections.defaultdict(lambda: list())
+        for k, v in networkx.get_node_attributes(G, 'community').items():
+            communities[v].append(k)
+
+        intra_density = collections.defaultdict(lambda: list())
+        inter_density = collections.defaultdict(lambda: list())
+        sum_diffs = 0
+        vertex_count = len(G.nodes())
+        for community in communities.keys():
+            nc = len(communities[community])
+            intra_density[community] = measure.intra_community_edges(G, communities[community])
+            inter_density[community] = measure.inter_community_edges(G, [{node} for node in communities[community]])
+            sum_diffs = intra_density[community] / (nc * (nc - 1)) * 2 -\
+                        inter_density[community] / (nc * (vertex_count - nc))
+
+        print("Sum of intra-inter community edge density differences ", sum_diffs)
+
+
     def outputCommunities(self, G):
         self.findCommunities(G)
         communities = collections.defaultdict(lambda: list())
@@ -103,30 +124,6 @@ class InfoMap:
             print(f'count{count},community{communitie}', end='\n')
         print(self.cal_Q(communities.values()))
 
-    def cal_Q(self, partition):  # 计算Q
-        m = len(self.graph.edges(None, False))  # 如果为真，则返回3元组（u、v、ddict）中的边缘属性dict。如果为false，则返回2元组（u，v）
-        # print(G.edges(None,False))
-        # print("=======6666666")
-        a = []
-        e = []
-        for community in partition:  # 把每一个联通子图拿出来
-            t = 0.0
-            for node in community:  # 找出联通子图的每一个顶点
-                t += len([x for x in self.graph.neighbors(node)])  # G.neighbors(node)找node节点的邻接节点
-            a.append(t / (2 * m))
-        #             self.zidian[t/(2*m)]=community
-        for community in partition:
-            t = 0.0
-            for i in range(len(community)):
-                for j in range(len(community)):
-                    if (self.graph.has_edge(community[i], community[j])):
-                        t += 1.0
-            e.append(t / (2 * m))
-
-        q = 0.0
-        for ei, ai in zip(e, a):
-            q += (ei - ai ** 2)
-        return q
 
     def visualize(self, G):
         self.findCommunities(G)
@@ -204,6 +201,7 @@ graph = networkx.karate_club_graph()
 a = InfoMap(graph)
 # a.findCommunities(graph)
 a.visualize(graph)
+a.output(graph)
 # a.printCom(graph)
 #
 
