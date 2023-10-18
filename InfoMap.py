@@ -1,11 +1,12 @@
 import networkx
+import collections
+import infomap
+
+from networkx.algorithms.community import asyn_lpa_communities
+import networkx.algorithms as algorithms
 import matplotlib.pyplot as pyplot
 import matplotlib.colors as colors
 
-import infomap
-import igraph
-import networkx.algorithms as algorithms
-import collections
 
 # The findCommunities and drawNetwork of the InfoMap class are adaptations of the following example:
 # github.com/chrisbloecker/infomap-bipartite/blob/master/examples/python/infomap-examples.ipynb
@@ -192,6 +193,13 @@ class InfoMap:
         for neighbour in G:
             neighbourList.append(neighbour)
         return neighbourList
+    
+class LabelPropagation:
+    def __init__(self, G):
+        self.graph = G
+
+    def findCommunities(self, G, weight, seed):
+        return asyn_lpa_communities(G, weight, seed)
 
 
 # results = open("results3.txt", 'a')
