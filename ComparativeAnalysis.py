@@ -94,25 +94,29 @@ class Analyser:
         return asyn_lpa_communities(G, weight, seed)
     
     def ratePartition(self, G, report):
-        report.write(self.sumDiff(G))
+        #report.write("Sum of intra-inter community edge density differences {}\n".format(int(self.sumDiff(G))))
+        pass
     
     def sumDiff(self, G):
         communities = collections.defaultdict(lambda: list())
-        for k, v in networkx.get_node_attributes(G, 'community').items():
+        for k, v in networkx.get_node_attributes(G, 'community').items(): # Fix this 
             communities[v].append(k)
+            print("x")
 
-        intra_density = collections.defaultdict(lambda: list())
-        inter_density = collections.defaultdict(lambda: list())
-        sum_diffs = 0
-        vertex_count = len(G.nodes())
-        for community in communities.keys():
-            nc = len(communities[community])
-            intra_density[community] = measure.intra_community_edges(G, communities[community])
-            inter_density[community] = measure.inter_community_edges(G, [{node} for node in communities[community]])
-            sum_diffs = intra_density[community] / (nc * (nc - 1)) * 2 -\
-                        inter_density[community] / (nc * (vertex_count - nc))
+        vertex_count = G.number_of_edges()
+        sumDiffs = 0
+        intra_density = collections.defaultdict()
+        inter_density = collections.defaultdict()
 
-        return ("Sum of intra-inter community edge density differences " + sum_diffs)
+        for cluster in communities.keys():
+            intra_density[cluster] = measure.intra_community_edges(G, communities[cluster])
+            inter_density[cluster] = measure.inter_community_edges(G, communities[cluster])
+
+        for cluster in communities.keys(): 
+            clusterSize = len(communities[cluster])
+            sumDiffs += intra_density[cluster] / ((clusterSize * (clusterSize - 1)) * 2) - inter_density[cluster] / (clusterSize * (vertex_count - clusterSize))
+
+        return sumDiffs
 
 
 def main():
@@ -133,7 +137,7 @@ def main():
         end = timer()
 
         report.write("InfoMap Stats:\n" + "Processing time: "+ str(end - start) + "s" + "\n")
-        analyser.ratePartition(graph, infoMapPartition)
+        analyser.ratePartition(graph.getGraph(), infoMapPartition)
 
         # Label Propagation
         start = timer()
@@ -141,7 +145,7 @@ def main():
         end = timer()
 
         report.write("Label Propagation Stats:\n" + "Processing time "+ str(end - start) + "s" + "\n")
-        analyser.ratePartition(report, labelPropagationPartition)
+        analyser.ratePartition(graph.getGraph(), labelPropagationPartition)
 
         report.write("\n")
      
