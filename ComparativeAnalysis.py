@@ -46,37 +46,25 @@ class Graph:
                         "Graph Type: " + ("Directed And " if self.graph.is_directed() == True else "Undirected And ") +\
                         ("Weighted" if networkx.is_weighted(self.graph) == True else "Non-Weighted") + "\n"                            
 
-        # The rest might be too costly. Not all parameters matter
+        # Decide which ones stay after getting results
                
         # results.write("Number of connected components: {}".format(a.getNumberOfConnectedComponents(graph)))
-        # results.write("\n")
         # results.write("Number of weakly connected components: {}".format(a.getNumberOfWeaklyConnectedComponents(graph)) if graph.is_directed() else "Weakly connected components not implemented for undirected case")
-        # results.write("\n")
         # results.write("Number of Isolates: {}".format(a.getNumberOfIsolates(graph)))
-        # results.write("\n")
         # results.write("Degree Centrality: {}".format(a.getDegreeCentrality(graph)))
-        # results.write("\n")
         # results.write("Betweeness Centrality: {}".format(a.getBetweenessCentrality(graph)))
         # print(a.getNeighbours(graph,1))
         # for component in a.getConnectedComponents(graph):
         #     subgraph = Graph()
         #     for neighbours in component:
         #     print("Diameter of {} is: {}\n".format(component,"pass"))
-        # results.write("\n")
         # results.write("Closeness centrality: {}".format(a.getClosenessCentrality(graph)))
-        # results.write("\n")
         # results.write("Katz centrality: {}".format(a.getKatzCentrality(graph)))
-        # results.write("\n")
         # results.write("Pagerank: {}".format(a.getPageRank(graph)))
-        # results.write("\n")
         # results.write("Triangles: {}".format(a.getTriangles(graph)))
-        # results.write("\n")
         # results.write("All Pairs Shortest Path: {}".format(a.getAllPairsShortestPath(graph)))
-        # results.write("\n")
         # results.write("All Pairs Shortest Connectivity: {}".format(a.getAllPairsNodeConnectivity(graph)))
-        # results.write("\n")
         # results.write("Network bridges: {}".format(a.getBridges(graph)))
-        # results.write("\n")
         # results.write("All Connected Components: {}".format(a.getConnectedComponents(graph)))
 
         report.write(analysis)
@@ -84,8 +72,7 @@ class Graph:
         
 class Analyser:
     def InfoMap(self, G,report):
-        # TODO Tweak this to improve solution after getting results
-        infomapWrapper = infomap.Infomap("--two-level --directed") 
+        infomapWrapper = infomap.Infomap("--two-level --directed") # TODO Tweak this to improve solution after getting results
 
         for e in G.edges():
             infomapWrapper.network.addLink(*e)
@@ -106,6 +93,9 @@ class Analyser:
     def LabelPropagation(self, G, weight, seed):
         return asyn_lpa_communities(G, weight, seed)
     
+    def ratePartition(self, G, report):
+        report.write(self.sumDiff(G))
+    
     def sumDiff(self, G):
         communities = collections.defaultdict(lambda: list())
         for k, v in networkx.get_node_attributes(G, 'community').items():
@@ -122,20 +112,7 @@ class Analyser:
             sum_diffs = intra_density[community] / (nc * (nc - 1)) * 2 -\
                         inter_density[community] / (nc * (vertex_count - nc))
 
-        print("Sum of intra-inter community edge density differences ", sum_diffs)
-
-    # TODO: fix this mess
-    def outputCommunities(self, G):
-        self.findCommunities(G)
-        communities = collections.defaultdict(lambda: list())
-        for k, v in networkx.get_node_attributes(G, 'community').items():
-            communities[v].append(k)
-        communitie_sort = sorted(communities.values(), key=lambda b: -len(b))
-        count = 0
-        for communitie in communitie_sort:
-            count += 1
-            print(f'count{count},community{communitie}', end='\n')
-        print(self.cal_Q(communities.values()))
+        return ("Sum of intra-inter community edge density differences " + sum_diffs)
 
 
 def main():
@@ -152,15 +129,19 @@ def main():
 
         # InfoMap - More stats in the stdout
         start = timer()
-        infoMapCommunities = analyser.InfoMap(graph.getGraph(), report)
+        infoMapPartition = analyser.InfoMap(graph.getGraph(), report)
         end = timer()
-        report.write("InfoMap processing time: "+ str(end - start) + "s" + "\n")
+
+        report.write("InfoMap Stats:\n" + "Processing time: "+ str(end - start) + "s" + "\n")
+        analyser.ratePartition(graph, infoMapPartition)
 
         # Label Propagation
         start = timer()
-        labelPropagationCommunities = analyser.LabelPropagation(graph.getGraph(), None, None)
+        labelPropagationPartition = analyser.LabelPropagation(graph.getGraph(), None, None)
         end = timer()
-        report.write("Label Propagation processing time "+ str(end - start) + "s" + "\n")
+
+        report.write("Label Propagation Stats:\n" + "Processing time "+ str(end - start) + "s" + "\n")
+        analyser.ratePartition(report, labelPropagationPartition)
 
         report.write("\n")
      
