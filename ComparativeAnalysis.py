@@ -4,7 +4,7 @@ import networkx
 import collections
 import infomap
 
-from networkx.algorithms.community import asyn_lpa_communities
+from networkx.algorithms.community.label_propagation import asyn_lpa_communities, label_propagation_communities
 from networkx.algorithms.community.quality import partition_quality
 import networkx.algorithms as algorithms
 import networkx.algorithms.community.quality as measure
@@ -29,9 +29,12 @@ class Graph:
     
     def getPartition(self):
         return self.partition
+    
+    def setPartition(self, partition):
+        self.partition = partition
 
     # Creates a partition as sets of edges from the community attribute in the graph set by the algorithms
-    def setPartition(self):
+    def updatePartition(self):
         self.partition = [[] for i in repeat(None, times=len(collections.Counter(list(networkx.get_node_attributes(self.graph, 'community').values())).keys()))]
         for k, v in networkx.get_node_attributes(self.getGraph(), 'community').items(): 
             self.partition[v].append(k)
@@ -101,12 +104,10 @@ class Analyser:
 
         networkx.set_node_attributes(graph.getGraph(), name='community', values=communities)
         
-        graph.setPartition()
+        graph.updatePartition()
 
-    
     def LabelPropagation(self, graph, weight, seed):
-        asyn_lpa_communities(graph.getGraph(), weight, seed)
-        graph.setPartition()
+        graph.setPartition(asyn_lpa_communities(graph.getGraph(), weight, seed))
     
     def ratePartition(self, graph, report):
         self.adaptedMancoridisMetric(graph, report)
@@ -146,7 +147,7 @@ def main():
     #TODO Use createGraphLFR to create graphs
 
     for edgeListModel in edgeListModels:
-        graph = Graph(edgeListModel) 
+        graph = Graph(edgeListModel)
         graph.createGraphFromEdgeList(edgeListModel)
         graph.classify(report)
 
