@@ -1,27 +1,40 @@
+from operator import length_hint
 from typing import Self
 import networkx
 import collections
 import infomap
 
 from networkx.algorithms.community import asyn_lpa_communities
+from networkx.algorithms.community.quality import partition_quality
 import networkx.algorithms as algorithms
 import networkx.algorithms.community.quality as measure
 import matplotlib.pyplot as pyplot
 import matplotlib.colors as colors
 
 from timeit import default_timer as timer
+from itertools import repeat
 
 
 class Graph:
     def __init__(self, name):
         self.graph = networkx.Graph()
         self.name = name
+        self.partition = []
 
     def getGraph(self):
         return self.graph
     
     def getName(self):
         return self.name
+    
+    def getPartition(self):
+        return self.partition
+
+    # Creates a partition as sets of edges from the community attribute in the graph set by the algorithms
+    def setPartition(self):
+        self.partition = [[] for i in repeat(None, times=len(collections.Counter(list(networkx.get_node_attributes(self.graph, 'community').values())).keys()))]
+        for k, v in networkx.get_node_attributes(self.getGraph(), 'community').items(): 
+            self.partition[v].append(k)
 
     def createGraphFromEdgeList(self, filename):
 
@@ -71,10 +84,10 @@ class Graph:
 
         
 class Analyser:
-    def InfoMap(self, G,report):
+    def InfoMap(self, graph, report):
         infomapWrapper = infomap.Infomap("--two-level --directed") # TODO Tweak this to improve solution after getting results
 
-        for e in G.edges():
+        for e in graph.getGraph().edges():
             infomapWrapper.network.addLink(*e)
 
         infomapWrapper.run()
@@ -86,38 +99,46 @@ class Analyser:
         for node in infomapWrapper.iterLeafNodes():
             communities[node.physicalId] = node.moduleIndex()
 
-        networkx.set_node_attributes(G, name='community', values=communities)
+        networkx.set_node_attributes(graph.getGraph(), name='community', values=communities)
+        
+        graph.setPartition()
 
-        return infomapWrapper.numTopModules()   
     
-    def LabelPropagation(self, G, weight, seed):
-        return asyn_lpa_communities(G, weight, seed)
+    def LabelPropagation(self, graph, weight, seed):
+        asyn_lpa_communities(graph.getGraph(), weight, seed)
+        graph.setPartition()
     
-    def ratePartition(self, G, report):
-        #report.write("Sum of intra-inter community edge density differences {}\n".format(int(self.sumDiff(G))))
-        pass
+    def ratePartition(self, graph, report):
+        # self.sumDiff(graph, report)
+        self.partition_quality(graph, report)
+
+    def sumDiff(self, graph, report):# -> Any | int:
+        sumIntraClusterDensity = 0
+        sumInterClusterDensity = 0
+
+        for community in graph.getPartition():
+            communitySubGraph = graph.getGraph().subgraph(community)
+            communityAntiSubGraph = graph.getGraph().remove_nodes_from(community)
+            communityNodeNumber = len(community)
+
+            # Also known as Internal Density
+            internalEdges = communitySubGraph.number_of_edges()
+            maxPossibleInternalEdges = communityNodeNumber * (communityNodeNumber - 1) / (1 if graph.getGraph().is_directed() == True else 2)
+            sumIntraClusterDensity += internalEdges / maxPossibleInternalEdges
+
+            # Also known as cut ration
+            interClusterEdges = len(list(networkx.edge_boundary(communitySubGraph, communityAntiSubGraph)))
+            maxPossibleInterClusterEdges = communityNodeNumber * (graph.getGraph().size() - communityNodeNumber)
+            sumInterClusterDensity += interClusterEdges / maxPossibleInterClusterEdges
+
+        report.write("Adapted mancoridis metric: sumIntraClusterDensity {} - sumInterClusterDensity {} = {}\n".
+                     format(sumIntraClusterDensity, sumInterClusterDensity, sumIntraClusterDensity - sumInterClusterDensity))
     
-    def sumDiff(self, G):
-        communities = collections.defaultdict(lambda: list())
-        for k, v in networkx.get_node_attributes(G, 'community').items(): # Fix this 
-            communities[v].append(k)
-            print("x")
-
-        vertex_count = G.number_of_edges()
-        sumDiffs = 0
-        intra_density = collections.defaultdict()
-        inter_density = collections.defaultdict()
-
-        for cluster in communities.keys():
-            intra_density[cluster] = measure.intra_community_edges(G, communities[cluster])
-            inter_density[cluster] = measure.inter_community_edges(G, communities[cluster])
-
-        for cluster in communities.keys(): 
-            clusterSize = len(communities[cluster])
-            sumDiffs += intra_density[cluster] / ((clusterSize * (clusterSize - 1)) * 2) - inter_density[cluster] / (clusterSize * (vertex_count - clusterSize))
-
-        return sumDiffs
-
+    def partition_quality(self, graph, report):
+        quality = partition_quality(graph.getGraph(), graph.getPartition())
+        report.write("Coverage: {}\n".format(quality[0]))
+        report.write("Performance: {}\n".format(quality[1]))
+        
 
 def main():
     report = open("report.txt", 'a')
@@ -126,29 +147,28 @@ def main():
     edgeListModels = ["data//club.txt"]
     #TODO Use createGraphLFR to create graphs
 
-    for edgeListModel in edgeListModels:         
+    for edgeListModel in edgeListModels:
         graph = Graph(edgeListModel) 
         graph.createGraphFromEdgeList(edgeListModel)
         graph.classify(report)
 
         # InfoMap - More stats in the stdout
         start = timer()
-        infoMapPartition = analyser.InfoMap(graph.getGraph(), report)
+        analyser.InfoMap(graph, report)
         end = timer()
-
         report.write("InfoMap Stats:\n" + "Processing time: "+ str(end - start) + "s" + "\n")
-        analyser.ratePartition(graph.getGraph(), infoMapPartition)
+        analyser.ratePartition(graph, report)
 
         # Label Propagation
         start = timer()
-        labelPropagationPartition = analyser.LabelPropagation(graph.getGraph(), None, None)
+        analyser.LabelPropagation(graph, None, None)
         end = timer()
-
         report.write("Label Propagation Stats:\n" + "Processing time "+ str(end - start) + "s" + "\n")
-        analyser.ratePartition(graph.getGraph(), labelPropagationPartition)
+        analyser.ratePartition(graph, report)
 
         report.write("\n")
      
 
 if __name__ == '__main__':
     main()
+    
