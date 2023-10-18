@@ -145,9 +145,17 @@ class InfoMap:
         pyplot.savefig("graph_draw.png")
         pyplot.show()
 
-    def output(self, G):
-        self.findCommunities(G)
+    
+class LabelPropagation:
+    def __init__(self, G):
+        self.graph = G
 
+    def findCommunities(self, G, weight, seed):
+        return asyn_lpa_communities(G, weight, seed)
+    
+
+class Analyser:
+    def sumDiff(self, G):
         communities = collections.defaultdict(lambda: list())
         for k, v in networkx.get_node_attributes(G, 'community').items():
             communities[v].append(k)
@@ -165,7 +173,7 @@ class InfoMap:
 
         print("Sum of intra-inter community edge density differences ", sum_diffs)
 
-
+    # TODO: fix this mess
     def outputCommunities(self, G):
         self.findCommunities(G)
         communities = collections.defaultdict(lambda: list())
@@ -178,32 +186,28 @@ class InfoMap:
             print(f'count{count},community{communitie}', end='\n')
         print(self.cal_Q(communities.values()))
 
-    
-class LabelPropagation:
-    def __init__(self, G):
-        self.graph = G
-
-    def findCommunities(self, G, weight, seed):
-        return asyn_lpa_communities(G, weight, seed)
-
 
 def main():
     graph = Graph()
     report = open("report.txt", 'a')
 
     dataModels = ["data//club.txt"]
+    #TODO Use createGraphLFR to create graphs
 
     for dataModel in dataModels: 
         graph.setName(dataModel) 
         graph.createGraphFromEdgeList(dataModel)
         graph.classify(report)
 
-    #TODO use createGraphLFR to create graphs
+        # InfoMap
+        infomap = InfoMap(graph)
+        # Measure performance here
+        infomap.findCommunities(graph)
 
-    a = InfoMap(graph)
-    # a.findCommunities(graph)
-    a.output(graph)
-    # a.printCom(graph)
+        # Label Propagation
+        labelpropagation = LabelPropagation(graph)
+        # Measure performance here
+        infomap.findCommunities(graph)
 
      
 
