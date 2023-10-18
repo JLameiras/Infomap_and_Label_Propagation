@@ -89,6 +89,8 @@ class InfoMap:
         pyplot.savefig("graph_draw.png")
         pyplot.show()
 
+    # Everything cleaned up until here!
+
     def outputCommunities(self, G):
         self.findCommunities(G)
         communities = collections.defaultdict(lambda: list())
@@ -125,9 +127,6 @@ class InfoMap:
         for ei, ai in zip(e, a):
             q += (ei - ai ** 2)
         return q
-
-    def plot3D(self, G):
-        pass
 
     def visualize(self, G):
         self.findCommunities(G)
