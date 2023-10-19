@@ -203,8 +203,6 @@ def main():
         graph.classify(report)
         analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
 
-        report.write("\n")
-
     #TODO find way to print graph communities
     #TODO draw graphs
      
