@@ -2,9 +2,8 @@ import networkx
 import collections
 import infomap
 import numpy
-import numpy as np
 
-from networkx.algorithms.community.label_propagation import asyn_lpa_communities, label_propagation_communities
+from networkx.algorithms.community.label_propagation import asyn_lpa_communities
 from networkx.algorithms.community.quality import partition_quality
 from networkx.algorithms.community import modularity
 
@@ -37,15 +36,17 @@ class Graph:
             self.partition[v].append(k)
 
     def createGraphFromEdgeList(self, filename):
-        #TODO add directed graphs (wiki-vote test) and directed weighted graphs and test em 
 
-        file = open(filename, 'r')
-    
+        file = open(filename, 'r')    
         type = file.readline().split()
 
         for line in file.readlines():
+            if type[0] == "d":
+                self.graph = self.graph.to_directed()
+                
             vertices = line.split()
             edge = (int(vertices[0]), int(vertices[1]))
+
             if type[1] == "w":
                 self.graph.add_edge(*edge, weight = int(vertices[2]))
             else:
@@ -186,7 +187,7 @@ def main():
     
     edgeListModels = ["data//LesMiserables.txt"]
 
-    infoMapArgumentsList: list[str] = ["--two-level --directed"]
+    infoMapArgumentsList = ["--two-level --directed"]
     labelPropagationArgumentsList = [[None, None]]
     # Tested options: n, tau1, tau2, mu, average_degree, min_community
     argumentsLFR = [[]]
