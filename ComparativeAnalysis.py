@@ -32,7 +32,8 @@ class Graph:
 
     # Creates a partition as sets of edges from the community attribute in the graph set by the algorithms
     def updatePartition(self):
-        self.partition = [[] for i in repeat(None, times=len(collections.Counter(list(networkx.get_node_attributes(self.graph, 'community').values())).keys()))]
+        self.partition = [[] for i in repeat(None,times=len(
+        collections.Counter(list(networkx.get_node_attributes(self.graph, 'community').values())).keys()))]
         for k, v in networkx.get_node_attributes(self.getGraph(), 'community').items(): 
             self.partition[v].append(k)
 
@@ -55,7 +56,8 @@ class Graph:
 
     def createGraphLFR(self, argumentsLFR):
             
-        self.graph = networkx.LFR_benchmark_graph(argumentsLFR[0], argumentsLFR[1], argumentsLFR[2], argumentsLFR[3], argumentsLFR[4], min_community=argumentsLFR[5])
+        self.graph = networkx.LFR_benchmark_graph(argumentsLFR[0], argumentsLFR[1], argumentsLFR[2],
+                                                    argumentsLFR[3], argumentsLFR[4], min_community=argumentsLFR[5])
     
     def classify(self, report):
         analysis = "-----Analyses of the network \"" + self.getName()[6:-4] + "\"-----\n" +\
@@ -183,7 +185,7 @@ def main():
     report = open("report.txt", 'a')
     analyser = Analyser()
     
-    edgeListModels = ["data//LesMiserables.txt"]
+    edgeListModels = ["data//CollegeMsg.txt"]
 
     infoMapArgumentsList = ["--two-level --directed"]
     labelPropagationArgumentsList = [[None, None]]
