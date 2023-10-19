@@ -134,14 +134,16 @@ class Analyser:
         graph.setPartition([list(s) for s in asyn_lpa_communities(graph.getGraph(), labelPropagationArguments[0], labelPropagationArguments[1])])
     
     def ratePartition(self, graph, report):
-        self.adaptedMancoridisMetric(graph, report)
+        self.adaptedMancoridisMetricAndExpansion(graph, report)
         self.partition_quality(graph, report)
         self.modularity(graph, report)
         self.triangleParticipationRatio(graph, report)
 
-    def adaptedMancoridisMetric(self, graph, report):
+    def adaptedMancoridisMetricAndExpansion(self, graph, report):
         sumIntraClusterDensity = 0
         sumInterClusterDensity = 0
+
+        expansion = []
 
         for community in graph.getPartition():
             communityNodeNumber = len(community)
@@ -156,8 +158,16 @@ class Analyser:
             maxPossibleInterClusterEdges = communityNodeNumber * (graph.getGraph().size() - communityNodeNumber) * (2 if graph.getGraph().is_directed() == True else 1)
             sumInterClusterDensity += interClusterEdges / maxPossibleInterClusterEdges
 
-        report.write("Adapted Mancoridis metric: Total Intra Cluster Density {} - Total Inter Cluster Density {} = {}\n".
-                     format(sumIntraClusterDensity, sumInterClusterDensity, sumIntraClusterDensity - sumInterClusterDensity))
+            expansion += [interClusterEdges / communityNodeNumber]
+
+        report.write(
+            "Adapted Mancoridis metric: Total Intra Cluster Density {} - Total Inter Cluster Density {} = {}\n".
+            format(sumIntraClusterDensity,
+                    sumInterClusterDensity,
+                    sumIntraClusterDensity - sumInterClusterDensity)
+             )
+        report.write("Triangle Participation Ratio Average: {}\n".format(statistics.stdev(expansion)))
+        report.write("Triangle Participation Standard Deviation: {}\n".format(statistics.mean(expansion)))
     
     def partition_quality(self, graph, report):
         quality = partition_quality(graph.getGraph(), graph.getPartition())
