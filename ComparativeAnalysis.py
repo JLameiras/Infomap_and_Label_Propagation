@@ -1,6 +1,8 @@
 import networkx
 import collections
 import infomap
+import numpy
+import numpy as np
 
 from networkx.algorithms.community.label_propagation import asyn_lpa_communities, label_propagation_communities
 from networkx.algorithms.community.quality import partition_quality
@@ -8,8 +10,6 @@ from networkx.algorithms.community import modularity
 
 from timeit import default_timer as timer
 from itertools import repeat
-from operator import length_hint
-from typing import Self
 
 
 class Graph:
@@ -144,7 +144,23 @@ class Analyser:
     def modularity(self, graph, report):
         report.write("Modularity: {}\n".format(modularity(graph.getGraph(), graph.getPartition(), resolution=1)))
         
-    #TODO add conductability
+    def triangle_participation_ratio(self, graph, report):
+        triangles = 0
+        for community in graph.getPartition():
+            matrix = networkx.to_numpy_array(graph.getGraph().to_undirected().subgraph(community))
+            if networkx.is_weighted(graph.getGraph()):
+                matrix[matrix != 0] = 1
+
+            triangles += numpy.trace(
+                numpy.linalg.matrix_power(
+                    matrix,
+                    3
+                )
+            ) / 6
+
+        report.write("Triangles total in communities: {}\n".format(triangles))
+
+
 
 def main():
     report = open("report.txt", 'a')
@@ -171,6 +187,7 @@ def main():
             report.write("----------InfoMap Stats----------\n" +\
                         "InfoMap Parameters: " + infoMapArguments + "\nProcessing time: "+ str(end - start) + "s" + "\n")
             analyser.ratePartition(graph, report)
+            analyser.triangle_participation_ratio(graph, report)
 
         # Label Propagation 
         for labelPropagationArguments in labelPropagationArgumentsList:
