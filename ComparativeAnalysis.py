@@ -2,6 +2,7 @@ import networkx
 import collections
 import infomap
 import numpy
+import statistics
 
 from networkx.algorithms.community.label_propagation import asyn_lpa_communities
 from networkx.algorithms.community.quality import partition_quality
@@ -43,7 +44,7 @@ class Graph:
         for line in file.readlines():
             if type[0] == "d":
                 self.graph = self.graph.to_directed()
-                
+
             vertices = line.split()
             edge = (int(vertices[0]), int(vertices[1]))
 
@@ -110,8 +111,8 @@ class Analyser:
     def InfoMap(self, graph, report, infoMapArguments):
         infomapWrapper = infomap.Infomap(infoMapArguments)
 
-        for e in graph.getGraph().edges():
-            infomapWrapper.network.addLink(*e)
+        for edge in graph.getGraph().edges():
+            infomapWrapper.network.addLink(*edge)
 
         infomapWrapper.run()
 
@@ -124,6 +125,7 @@ class Analyser:
 
         networkx.set_node_attributes(graph.getGraph(), name='community', values=communities)
         
+        # Make partition accessible by other methods
         graph.updatePartition()
 
     def LabelPropagation(self, graph, labelPropagationArguments):
@@ -133,7 +135,7 @@ class Analyser:
         self.adaptedMancoridisMetric(graph, report)
         self.partition_quality(graph, report)
         self.modularity(graph, report)
-        self.triangle_participation_ratio(graph, report)
+        self.triangleParticipationRatio(graph, report)
 
     def adaptedMancoridisMetric(self, graph, report):
         sumIntraClusterDensity = 0
@@ -163,22 +165,18 @@ class Analyser:
     def modularity(self, graph, report):
         report.write("Modularity: {}\n".format(modularity(graph.getGraph(), graph.getPartition(), resolution=1)))
         
-    def triangle_participation_ratio(self, graph, report):
-        triangles = 0
+    def triangleParticipationRatio(self, graph, report):
+        triangleParticipationRatio = []
+
         for community in graph.getPartition():
             matrix = networkx.to_numpy_array(graph.getGraph().to_undirected().subgraph(community))
             if networkx.is_weighted(graph.getGraph()):
                 matrix[matrix != 0] = 1
 
-            triangles += numpy.trace(
-                numpy.linalg.matrix_power(
-                    matrix,
-                    3
-                )
-            ) / 6
+            triangleParticipationRatio += [numpy.trace(numpy.linalg.matrix_power(matrix, 3)) / 6]
 
-        report.write("Triangles total in communities: {}\n".format(triangles))
-
+        report.write("Triangle Participation Ratio Average: {}\n".format(statistics.stdev(triangleParticipationRatio)))
+        report.write("Triangle Participation Standard Deviation: {}\n".format(statistics.mean(triangleParticipationRatio)))
 
 
 def main():
