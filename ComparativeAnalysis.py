@@ -57,9 +57,9 @@ class Graph:
         return self.graph
     
     def classify(self, report):
-        analysis = "Analyses of the network " + self.getName() + "\n" +\
+        analysis = "-----Analyses of the network \"" + self.getName()[6:-4] + "\"-----\n" +\
                         "Nodes: {}, Edges: {}, Self Loops: {}".format(self.graph.number_of_nodes(), self.graph.number_of_edges(), networkx.number_of_selfloops(self.graph)) + "\n" +\
-                        "Graph Type: " + ("Directed And " if self.graph.is_directed() == True else "Undirected And ") +\
+                        "Graph Type: " + ("Directed and " if self.graph.is_directed() == True else "Undirected and ") +\
                         ("Weighted" if networkx.is_weighted(self.graph) == True else "Non-Weighted") + "\n"                            
 
         # Decide which ones stay after getting results
@@ -87,8 +87,8 @@ class Graph:
 
         
 class Analyser:
-    def InfoMap(self, graph, report):
-        infomapWrapper = infomap.Infomap("--two-level --directed") # TODO Tweak this to improve solution after getting results
+    def InfoMap(self, graph, report, infoMapArguments):
+        infomapWrapper = infomap.Infomap(infoMapArguments)
 
         for e in graph.getGraph().edges():
             infomapWrapper.network.addLink(*e)
@@ -106,8 +106,8 @@ class Analyser:
         
         graph.updatePartition()
 
-    def LabelPropagation(self, graph, weight, seed):
-        graph.setPartition(asyn_lpa_communities(graph.getGraph(), weight, seed))
+    def LabelPropagation(self, graph, labelPropagationArguments):
+        graph.setPartition([list(s) for s in asyn_lpa_communities(graph.getGraph(), labelPropagationArguments[0], labelPropagationArguments[1])])
     
     def ratePartition(self, graph, report):
         self.adaptedMancoridisMetric(graph, report)
@@ -144,6 +144,10 @@ def main():
     analyser = Analyser()
     
     edgeListModels = ["data//club.txt"]
+
+    infoMapArgumentsList = ["--two-level --directed"]
+    labelPropagationArgumentsList = [[None, None]]
+
     #TODO Use createGraphLFR to create graphs
 
     for edgeListModel in edgeListModels:
@@ -151,19 +155,23 @@ def main():
         graph.createGraphFromEdgeList(edgeListModel)
         graph.classify(report)
 
-        # InfoMap - More stats in the stdout
-        start = timer()
-        analyser.InfoMap(graph, report)
-        end = timer()
-        report.write("InfoMap Stats:\n" + "Processing time: "+ str(end - start) + "s" + "\n")
-        analyser.ratePartition(graph, report)
+        #TODO Redirect infomap stdout to report
+        # InfoMap
+        for infoMapArguments in infoMapArgumentsList:
+            start = timer()
+            analyser.InfoMap(graph, report, infoMapArguments)
+            end = timer()
+            report.write("----------InfoMap Stats----------\n" +\
+                        "InfoMap Parameters: " + infoMapArguments + "\nProcessing time: "+ str(end - start) + "s" + "\n")
+            analyser.ratePartition(graph, report)
 
-        # Label Propagation
-        start = timer()
-        analyser.LabelPropagation(graph, None, None)
-        end = timer()
-        report.write("Label Propagation Stats:\n" + "Processing time "+ str(end - start) + "s" + "\n")
-        analyser.ratePartition(graph, report)
+        # Label Propagation 
+        for labelPropagationArguments in labelPropagationArgumentsList:
+            start = timer()
+            analyser.LabelPropagation(graph, labelPropagationArguments)
+            end = timer()
+            report.write("------Label Propagation Stats------\n" + "Processing time "+ str(end - start) + "s" + "\n")
+            analyser.ratePartition(graph, report)
 
         report.write("\n")
      
