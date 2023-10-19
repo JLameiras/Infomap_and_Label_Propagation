@@ -188,7 +188,7 @@ def main():
     infoMapArgumentsList = ["--two-level --directed"]
     labelPropagationArgumentsList = [[None, None]]
     # Tested options: n, tau1, tau2, mu, average_degree, min_community
-    argumentsLFR = [[]]
+    argumentsLFR = []
 
     for edgeListModel in edgeListModels:
         graph = Graph(edgeListModel)
