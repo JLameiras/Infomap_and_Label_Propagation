@@ -147,7 +147,7 @@ class Analyser:
     #TODO add conductability
 
 def main():
-    report = open("LesMiserables.txt", 'a')
+    report = open("report.txt", 'a')
     analyser = Analyser()
     
     edgeListModels = ["data//LesMiserables.txt"]
