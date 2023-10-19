@@ -45,7 +45,7 @@ class Graph:
         for line in file.readlines():
             vertices = line.split()
             edge = (int(vertices[0]), int(vertices[1]))
-            if type[1] is "w":
+            if type[1] == "w":
                 self.graph.add_edge(*edge, weight = int(vertices[2]))
             else:
                 self.graph.add_edge(*edge)
