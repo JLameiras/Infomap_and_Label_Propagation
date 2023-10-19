@@ -37,6 +37,7 @@ class Graph:
             self.partition[v].append(k)
 
     def createGraphFromEdgeList(self, filename):
+        #TODO add directed graphs (wiki-vote test) and directed weighted graphs and test em 
 
         file = open(filename, 'r')
     
@@ -143,6 +144,7 @@ class Analyser:
     def modularity(self, graph, report):
         report.write("Modularity: {}\n".format(modularity(graph.getGraph(), graph.getPartition(), resolution=1)))
         
+    #TODO add conductability
 
 def main():
     report = open("LesMiserables.txt", 'a')
@@ -179,6 +181,9 @@ def main():
             analyser.ratePartition(graph, report)
 
         report.write("\n")
+
+    #TODO find way to print graph communities
+    #TODO draw graphs
      
 
 if __name__ == '__main__':
