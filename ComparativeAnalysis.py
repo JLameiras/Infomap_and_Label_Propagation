@@ -128,7 +128,7 @@ class Analyser:
             maxPossibleInterClusterEdges = communityNodeNumber * (graph.getGraph().size() - communityNodeNumber) * (2 if graph.getGraph().is_directed() == True else 1)
             sumInterClusterDensity += interClusterEdges / maxPossibleInterClusterEdges
 
-        report.write("Adapted Mancoridis metric: sumIntraClusterDensity {} - sumInterClusterDensity {} = {}\n".
+        report.write("Adapted Mancoridis metric: Total Intra Cluster Density {} - Total Inter Cluster Density {} = {}\n".
                      format(sumIntraClusterDensity, sumInterClusterDensity, sumIntraClusterDensity - sumInterClusterDensity))
     
     def partition_quality(self, graph, report):
@@ -141,7 +141,7 @@ class Analyser:
         
 
 def main():
-    report = open("report.txt", 'a')
+    report = open("LesMiserables.txt", 'a')
     analyser = Analyser()
     
     edgeListModels = ["data//club.txt"]
