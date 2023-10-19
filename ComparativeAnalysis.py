@@ -166,8 +166,8 @@ class Analyser:
                     sumInterClusterDensity,
                     sumIntraClusterDensity - sumInterClusterDensity)
              )
-        report.write("Triangle Participation Ratio Average: {}\n".format(statistics.stdev(expansion)))
-        report.write("Triangle Participation Standard Deviation: {}\n".format(statistics.mean(expansion)))
+        report.write("Community Expansion Average: {}\n".format(statistics.stdev(expansion)))
+        report.write("Community Expansion Deviation: {}\n".format(statistics.mean(expansion)))
     
     def partition_quality(self, graph, report):
         quality = partition_quality(graph.getGraph(), graph.getPartition())
