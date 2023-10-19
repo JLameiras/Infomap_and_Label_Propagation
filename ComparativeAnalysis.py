@@ -51,12 +51,9 @@ class Graph:
             else:
                 self.graph.add_edge(*edge)
 
-    def createGraphLFR(self, n, tau1, tau2, mu, average_degree, min_degree, max_degree,
-                       min_community, max_community, tol, max_iters, seed):
+    def createGraphLFR(self, argumentsLFR):
             
-        self.graph = networkx.LFR_benchmark_graph(n, tau1, tau2, mu, average_degree, min_degree, max_degree,min_community, max_community, tol, max_iters, seed)
-
-        return self.graph
+        self.graph = networkx.LFR_benchmark_graph(argumentsLFR[0], argumentsLFR[1], argumentsLFR[2], argumentsLFR[3], argumentsLFR[4], min_community=argumentsLFR[5])
     
     def classify(self, report):
         analysis = "-----Analyses of the network \"" + self.getName()[6:-4] + "\"-----\n" +\
@@ -89,6 +86,26 @@ class Graph:
 
         
 class Analyser:
+    def runTestSuite(self, infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report):
+        # InfoMap
+        for infoMapArguments in infoMapArgumentsList:
+            start = timer()
+            analyser.InfoMap(graph, report, infoMapArguments)
+            end = timer()
+            report.write("----------InfoMap Stats----------\n" +\
+                        "InfoMap Parameters: " + infoMapArguments + "\nProcessing time: "+ str(end - start) + "s" + "\n")
+            analyser.ratePartition(graph, report)
+
+        # Label Propagation 
+        for labelPropagationArguments in labelPropagationArgumentsList:
+            start = timer()
+            analyser.LabelPropagation(graph, labelPropagationArguments)
+            end = timer()
+            report.write("------Label Propagation Stats------\n" + "Processing time "+ str(end - start) + "s" + "\n")
+            analyser.ratePartition(graph, report)
+
+        report.write("\n")
+        
     def InfoMap(self, graph, report, infoMapArguments):
         infomapWrapper = infomap.Infomap(infoMapArguments)
 
@@ -152,35 +169,23 @@ def main():
     
     edgeListModels = ["data//LesMiserables.txt"]
 
-    infoMapArgumentsList = ["--two-level --directed"]
+    infoMapArgumentsList: list[str] = ["--two-level --directed"]
     labelPropagationArgumentsList = [[None, None]]
-
-    #TODO Use createGraphLFR to create graphs
+    # Tested options: n, tau1, tau2, mu, average_degree, min_community
+    argumentsLFR = [[]]
 
     for edgeListModel in edgeListModels:
         graph = Graph(edgeListModel)
         graph.createGraphFromEdgeList(edgeListModel)
         graph.classify(report)
+        analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
 
-        #TODO Redirect infomap stdout to report
-        # InfoMap
-        for infoMapArguments in infoMapArgumentsList:
-            start = timer()
-            analyser.InfoMap(graph, report, infoMapArguments)
-            end = timer()
-            report.write("----------InfoMap Stats----------\n" +\
-                        "InfoMap Parameters: " + infoMapArguments + "\nProcessing time: "+ str(end - start) + "s" + "\n")
-            analyser.ratePartition(graph, report)
+    for argumentLFR in argumentsLFR:
+        graph = Graph("LFR")
+        graph.createGraphLFR(argumentLFR)
+        graph.classify(report)
+        analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
 
-        # Label Propagation 
-        for labelPropagationArguments in labelPropagationArgumentsList:
-            start = timer()
-            analyser.LabelPropagation(graph, labelPropagationArguments)
-            end = timer()
-            report.write("------Label Propagation Stats------\n" + "Processing time "+ str(end - start) + "s" + "\n")
-            analyser.ratePartition(graph, report)
-
-        report.write("\n")
 
     #TODO find way to print graph communities
     #TODO draw graphs
