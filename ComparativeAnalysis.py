@@ -1,18 +1,15 @@
-from operator import length_hint
-from typing import Self
 import networkx
 import collections
 import infomap
 
 from networkx.algorithms.community.label_propagation import asyn_lpa_communities, label_propagation_communities
 from networkx.algorithms.community.quality import partition_quality
-import networkx.algorithms as algorithms
-import networkx.algorithms.community.quality as measure
-import matplotlib.pyplot as pyplot
-import matplotlib.colors as colors
+from networkx.algorithms.community import modularity
 
 from timeit import default_timer as timer
 from itertools import repeat
+from operator import length_hint
+from typing import Self
 
 
 class Graph:
@@ -112,6 +109,7 @@ class Analyser:
     def ratePartition(self, graph, report):
         self.adaptedMancoridisMetric(graph, report)
         self.partition_quality(graph, report)
+        self.modularity(graph, report)
 
     def adaptedMancoridisMetric(self, graph, report):
         sumIntraClusterDensity = 0
@@ -137,6 +135,9 @@ class Analyser:
         quality = partition_quality(graph.getGraph(), graph.getPartition())
         report.write("Coverage: {}\n".format(quality[0]))
         report.write("Performance: {}\n".format(quality[1]))
+
+    def modularity(self, graph, report):
+        report.write("Modularity: {}\n".format(modularity(graph.getGraph(), graph.getPartition(), resolution=1)))
         
 
 def main():
