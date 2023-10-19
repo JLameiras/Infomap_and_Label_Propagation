@@ -39,13 +39,17 @@ class Graph:
     def createGraphFromEdgeList(self, filename):
 
         file = open(filename, 'r')
+    
+        type = file.readline()
 
         for line in file.readlines():
             vertices = line.split()
             edge = (int(vertices[0]), int(vertices[1]))
-            self.graph.add_edge(*edge)
+            if type[1] is "w":
+                self.graph.add_edge(*edge, weight = int(vertices[2]))
+            else:
+                self.graph.add_edge(*edge)
 
-    
     def createGraphLFR(self, n, tau1, tau2, mu, average_degree, min_degree, max_degree,
                        min_community, max_community, tol, max_iters, seed):
             
@@ -144,7 +148,7 @@ def main():
     report = open("LesMiserables.txt", 'a')
     analyser = Analyser()
     
-    edgeListModels = ["data//club.txt"]
+    edgeListModels = ["data//LesMiserables.txt"]
 
     infoMapArgumentsList = ["--two-level --directed"]
     labelPropagationArgumentsList = [[None, None]]
