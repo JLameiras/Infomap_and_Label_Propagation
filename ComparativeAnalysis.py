@@ -41,7 +41,7 @@ class Graph:
 
         file = open(filename, 'r')
     
-        type = file.readline()
+        type = file.readline().split()
 
         for line in file.readlines():
             vertices = line.split()
