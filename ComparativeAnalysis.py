@@ -1,4 +1,6 @@
 from math import sqrt
+import uuid
+
 import networkx
 import collections
 import infomap
@@ -89,27 +91,44 @@ class Graph:
 
         report.write(analysis)
 
-        
+
 class Analyser:
     def runTestSuite(self, infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report):
         # InfoMap
+        analysis = {}
         for infoMapArguments in infoMapArgumentsList:
             start = timer()
             analyser.InfoMap(graph, report, infoMapArguments)
             end = timer()
-            report.write("----------InfoMap Stats----------\n" +\
-                        "InfoMap Parameters: " + infoMapArguments + "\nProcessing time: "+ str(end - start) + "s" + "\n")
-            analyser.ratePartition(graph, report)
+
+            report.write("----------InfoMap Stats----------\n" +
+                        "InfoMap Parameters: " +
+                         infoMapArguments +
+                         "\nProcessing time: " +
+                         str(end - start) +
+                         "s" +
+                         "\n")
+
+            # Analyze partition quality
+            analysis["infomap"] = analyser.ratePartition(graph, report)
 
         # Label Propagation 
         for labelPropagationArguments in labelPropagationArgumentsList:
             start = timer()
             analyser.LabelPropagation(graph, labelPropagationArguments)
             end = timer()
-            report.write("------Label Propagation Stats------\n" + "Processing time "+ str(end - start) + "s" + "\n")
-            analyser.ratePartition(graph, report)
+
+            report.write("------Label Propagation Stats------\n" +
+                         "Processing time " +
+                         str(end - start) +
+                         "s" +
+                         "\n")
+
+            # Analyze partition quality
+            analysis["label_prop"] = analyser.ratePartition(graph, report)
 
         report.write("\n")
+        return analysis
         
     def InfoMap(self, graph, report, infoMapArguments):
         infomapWrapper = infomap.Infomap(infoMapArguments)
@@ -119,7 +138,8 @@ class Analyser:
 
         infomapWrapper.run()
 
-        report.write("%d modules with codelength %f found\n" % (infomapWrapper.numTopModules(), infomapWrapper.codelength))
+        report.write("%d modules with codelength %f found\n" % (infomapWrapper.numTopModules(),
+                                                                infomapWrapper.codelength))
 
         # Set the community of each node in the graph
         communities = {}
@@ -132,16 +152,43 @@ class Analyser:
         graph.updatePartition()
 
     def LabelPropagation(self, graph, labelPropagationArguments):
-        graph.setPartition([list(s) for s in asyn_lpa_communities(graph.getGraph(), labelPropagationArguments[0], labelPropagationArguments[1])])
+        graph.setPartition(
+            [
+                list(s) for s in asyn_lpa_communities(
+                    graph.getGraph(), labelPropagationArguments[0], labelPropagationArguments[1]
+                )
+            ]
+        )
+    
     def ratePartition(self, graph, report):
-        self.adaptedMancoridisMetric(graph, report)
-        self.partition_quality(graph, report)
-        self.modularity(graph, report)
-        self.triangleParticipationRatio(graph, report)
+        sum_intra_density, sum_inter_density, diff_sum_intra_inter_densities, \
+            expansion_mean, expansion_stdev = self.adapted_mancoridis_metric_and_expansion_metric(graph, report)
+        print("     -> Mancoridis & Expansion Analyzed")
+        coverage, performance = self.partition_quality(graph, report)
+        print("     -> Coverage & Performance Analyzed")
+        modularity = self.modularity(graph, report)
+        print("     -> Modularity Analyzed")
+        triangle_mean, triangle_stdev = self.triangle_participation_ratio(graph, report)
+        print("     -> Triangle Participation Analyzed")
 
-    def adaptedMancoridisMetric(self, graph, report):
+        return {
+            "sum_intra_density": sum_intra_density,
+            "sum_inter_density": sum_inter_density,
+            "diff_sum_densities": diff_sum_intra_inter_densities,
+            "expansion_mean": expansion_mean,
+            "expansion_deviation": expansion_stdev,
+            "modularity": modularity,
+            "coverage": coverage,
+            "performance": performance,
+            "triangle_participation_mean": triangle_mean,
+            "triangle_participation_deviation": triangle_stdev
+        }
+
+    def adapted_mancoridis_metric_and_expansion_metric(self, graph, report):
         sumIntraClusterDensity = 0
         sumInterClusterDensity = 0
+
+        expansion = []
 
         for community in graph.getPartition():
             communityNodeNumber = len(community)
@@ -160,18 +207,33 @@ class Analyser:
             maxPossibleInterClusterEdges = communityNodeNumber * (graph.getGraph().size() - communityNodeNumber) * (2 if graph.getGraph().is_directed() == True else 1)
             sumInterClusterDensity += interClusterEdges / maxPossibleInterClusterEdges
 
-        report.write("Adapted Mancoridis metric: Total Intra Cluster Density {} - Total Inter Cluster Density {} = {}\n".
-                     format(sumIntraClusterDensity, sumInterClusterDensity, sumIntraClusterDensity - sumInterClusterDensity))
-    
+            expansion += [interClusterEdges / communityNodeNumber]
+
+        report.write(
+            "Adapted Mancoridis metric: Total Intra Cluster Density {} - Total Inter Cluster Density {} = {}\n".
+            format(sumIntraClusterDensity,
+                    sumInterClusterDensity,
+                    sumIntraClusterDensity - sumInterClusterDensity)
+             )
+        stdev = statistics.stdev(expansion)
+        mean = statistics.mean(expansion)
+        report.write("Community Expansion Average: {}\n".format(statistics.stdev(expansion)))
+        report.write("Community Expansion Deviation: {}\n".format(statistics.mean(expansion)))
+        return sumIntraClusterDensity, sumInterClusterDensity, sumIntraClusterDensity - sumInterClusterDensity, \
+            mean, stdev
+
     def partition_quality(self, graph, report):
         quality = partition_quality(graph.getGraph(), graph.getPartition())
         report.write("Coverage: {}\n".format(quality[0]))
         report.write("Performance: {}\n".format(quality[1]))
+        return quality[0], quality[1]
 
     def modularity(self, graph, report):
-        report.write("Modularity: {}\n".format(modularity(graph.getGraph(), graph.getPartition(), resolution=1)))
-        
-    def triangleParticipationRatio(self, graph, report):
+        mod = modularity(graph.getGraph(), graph.getPartition(), resolution=1)
+        report.write("Modularity: {}\n".format(mod))
+        return mod
+
+    def triangle_participation_ratio(self, graph, report):
         triangleParticipationRatio = []
 
         for community in graph.getPartition():
@@ -198,7 +260,7 @@ def main():
     report = open("report.txt", 'a')
     analyser = Analyser()
     
-    edgeListModels = ["data//CollegeMsg.txt"]
+    edgeListModels = ["data/LesMiserables.txt"]
 
     infoMapArgumentsList = ["--two-level --directed"]
     labelPropagationArgumentsList = [[None, None]]
@@ -213,18 +275,23 @@ def main():
     argumentsLFR = list(list(combination) for combination in product(*[n, tau1, tau2, mu, average_degree])\
                         if (combination[1] != 3 or combination[2] != 2))
 
+    analysis = dict()
+
     for edgeListModel in edgeListModels:
         graph = Graph(edgeListModel)
         graph.createGraphFromEdgeList(edgeListModel)
         graph.classify(report)
-        analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
+        analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
 
     for argumentLFR in argumentsLFR:
         graph = Graph("LFR")
         graph.createGraphLFR(argumentLFR)
         graph.classify(report)
         analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
+        analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
 
+    print(analysis)
+     
 
 if __name__ == '__main__':
     main()
