@@ -54,7 +54,7 @@ class Graph:
             edge = (int(vertices[0]), int(vertices[1]))
 
             if type[1] == "w":
-                self.graph.add_edge(*edge, weight = int(vertices[2]))
+                self.graph.add_edge(*edge, weight = float(vertices[2]))
             else:
                 self.graph.add_edge(*edge)
 
@@ -105,7 +105,7 @@ class Analyser:
 
             report.write("----------InfoMap Stats----------\n" +
                         "InfoMap Parameters: " +
-                         infoMapArguments +
+                         str(infoMapArguments[0]) + #FIXME Add missing parameters
                          "\nProcessing time: " +
                          str(end - start) +
                          "s" +
@@ -133,7 +133,8 @@ class Analyser:
         return analysis
         
     def InfoMap(self, graph, report, infoMapArguments):
-        infomapWrapper = infomap.Infomap(infoMapArguments)
+        # Default multi-level network
+        infomapWrapper = infomap.Infomap(flow_model="undirected", use_node_weights_as_flow=True)
 
         for edge in graph.getGraph().edges():
             infomapWrapper.network.addLink(*edge)
@@ -292,8 +293,8 @@ def main():
     analyser = Analyser()
     analysis = dict()
     
-    edgeListModels = ["data/LesMiserables.txt"]
-    infoMapArgumentsList = ["--two-level --directed"]
+    edgeListModels = ["data/bio-SC-TS.txt"]
+    infoMapArgumentsList = [[True]]
     labelPropagationArgumentsList = [[None, None]]
 
     # Tested options: n, tau1, tau2, mu, average_degree, min_community
