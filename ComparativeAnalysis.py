@@ -77,6 +77,8 @@ class Graph:
         analysis += "Graph's Degrees standard deviation: " + str(statistics.stdev(degreeSequence)) + "\n"
         analysis += "Graph's Degrees quartiles: " + str(numpy.quantile(degreeSequence, [0,0.25,0.5,0.75,1])) + "\n"
 
+        # Too heavy to compute on Facebook's graph?
+        """
         degreeCentralities = networkx.betweenness_centrality(self.graph)
         degreeCentralityMean = statistics.mean(degreeCentralities)
         degreeCentralityStandardDeviation = statistics.stdev(degreeCentralities)
@@ -90,6 +92,10 @@ class Graph:
                 centralityOutliers += 1
 
         analysis += "Number of degree betweenness centrality positive edge outliers: " + str(centralityOutliers) + "\n"
+        """
+
+        if self.graph.is_directed() == False and networkx.is_weighted(self.graph) == False:
+            analysis += "Degree assortativity: " + str(networkx.degree_assortativity_coefficient(self.graph)) + "\n" 
 
         report.write(analysis)
 
@@ -293,7 +299,7 @@ def main():
     analyser = Analyser()
     analysis = dict()
     
-    edgeListModels = ["data/bio-SC-TS.txt"]
+    edgeListModels = ["data//facebook_combined.txt"]
     infoMapArgumentsList = [[True]]
     labelPropagationArgumentsList = [[None, None]]
 
