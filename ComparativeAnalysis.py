@@ -71,11 +71,11 @@ class Graph:
 
         #Calculate Graph's degree distribution
         degrees = [val for (node, val) in self.graph.degree()]
-        degree_sequence = sorted(degrees, reverse=True)        
+        degreeSequence = sorted(degrees, reverse=True)        
 
-        analysis += "Graph's Degrees mean: " + str(statistics.mean(degree_sequence)) + "\n"
-        analysis += "Graph's Degrees standard deviation: " + str(statistics.stdev(degree_sequence)) + "\n"
-        analysis += "Graph's Degrees quartiles: " + str(numpy.quantile(degree_sequence, [0,0.25,0.5,0.75,1])) + "\n"
+        analysis += "Graph's Degrees mean: " + str(statistics.mean(degreeSequence)) + "\n"
+        analysis += "Graph's Degrees standard deviation: " + str(statistics.stdev(degreeSequence)) + "\n"
+        analysis += "Graph's Degrees quartiles: " + str(numpy.quantile(degreeSequence, [0,0.25,0.5,0.75,1])) + "\n"
 
         degreeCentralities = networkx.betweenness_centrality(self.graph)
         degreeCentralityMean = statistics.mean(degreeCentralities)
@@ -156,17 +156,17 @@ class Analyser:
     def LabelPropagation(self, graph, labelPropagationArguments):
         graph.setPartition(
             [
-                list(s) for s in asyn_lpa_communities(
+                list(community) for community in asyn_lpa_communities(
                     graph.getGraph(), labelPropagationArguments[0], labelPropagationArguments[1]
                 )
             ]
         )
     
     def ratePartition(self, graph, report):
-        sum_intra_density, sum_inter_density, diff_sum_intra_inter_densities, \
-            expansion_mean, expansion_stdev = self.adapted_mancoridis_metric_and_expansion_metric(graph, report)
+        sumIntraDensity, sumInterDensity, diffSumIntraInterDensities, \
+            meanExpansion, stdevExpansion = self.adaptedMancoridisAndExpansionMetric(graph, report)
         print("     -> Mancoridis & Expansion Analyzed")
-        coverage, performance = self.partition_quality(graph, report)
+        coverage, performance = self.partitionQuality(graph, report)
         print("     -> Coverage & Performance Analyzed")
         modularity = self.modularity(graph, report)
         print("     -> Modularity Analyzed")
@@ -176,19 +176,17 @@ class Analyser:
         print("     -> Triangle Participation Analyzed")
 
         return {
-            "sum_intra_density": sum_intra_density,
-            "sum_inter_density": sum_inter_density,
-            "diff_sum_densities": diff_sum_intra_inter_densities,
-            "expansion_mean": expansion_mean,
-            "expansion_deviation": expansion_stdev,
-            "modularity": modularity,
-            "coverage": coverage,
-            "performance": performance,
+            "A. Mancoridis": diffSumIntraInterDensities,
+            "Expansion Mean": meanExpansion,
+            "Expansion Deviation": stdevExpansion,
+            "Modularity": modularity,
+            "Coverage": coverage,
+            "Performance": performance,
             # "triangle_participation_mean": triangle_mean,
             # "triangle_participation_deviation": triangle_stdev
         }
 
-    def adapted_mancoridis_metric_and_expansion_metric(self, graph, report):
+    def adaptedMancoridisAndExpansionMetric(self, graph, report):
         sumIntraClusterDensity = 0
         sumInterClusterDensity = 0
 
@@ -214,21 +212,24 @@ class Analyser:
             expansion += [interClusterEdges / communityNodeNumber]
  
         report.write(
-            "Adapted Mancoridis metric: Total Intra Cluster Density {} - Total Inter Cluster Density {} = {}\n".
-            format(sumIntraClusterDensity,
-                    sumInterClusterDensity,
-                    sumIntraClusterDensity - sumInterClusterDensity)
+            "Adapted Mancoridis metric: Average Intra Cluster Density {} - Average Inter Cluster Density {} = {}\n".
+            format(sumIntraClusterDensity / numCommunities,
+                   sumInterClusterDensity / numCommunities,
+                   sumIntraClusterDensity / numCommunities - sumInterClusterDensity / numCommunities)
              )
-        stdev = 0
+        
+        stdevExpansion = 0
         if len(expansion) > 1:
-            stdev = statistics.stdev(expansion)
-        mean = statistics.mean(expansion)
-        report.write("Community Expansion Average: {}\n".format(stdev))
-        report.write("Community Expansion Deviation: {}\n".format(mean))
-        return sumIntraClusterDensity / numCommunities, sumInterClusterDensity / numCommunities, sumIntraClusterDensity / numCommunities - sumInterClusterDensity / numCommunities, \
-            mean, stdev
+            stdevExpansion = statistics.stdev(expansion)
+        meanExpansion = statistics.mean(expansion)
 
-    def partition_quality(self, graph, report):
+        report.write("Community Expansion Average: {}\n".format(stdevExpansion))
+        report.write("Community Expansion Deviation: {}\n".format(meanExpansion))
+
+        return sumIntraClusterDensity / numCommunities, sumInterClusterDensity / numCommunities, sumIntraClusterDensity / numCommunities - sumInterClusterDensity / numCommunities, \
+            meanExpansion, stdevExpansion
+
+    def partitionQuality(self, graph, report):
         quality = partition_quality(graph.getGraph(), graph.getPartition())
         report.write("Coverage: {}\n".format(quality[0]))
         report.write("Performance: {}\n".format(quality[1]))
@@ -267,15 +268,14 @@ class Analyser:
 
         for results in analysis.values():
             metrics = results['infomap'].keys()
-            infomap_metrics = [results['infomap'][metric] for metric in metrics]
-            labelprop_metrics = [results['label_prop'][metric] for metric in metrics]
+            infomapMetrics = [results['infomap'][metric] for metric in metrics]
+            labelPropagationMetrics = [results['label_prop'][metric] for metric in metrics]
 
             x_axis = numpy.arange(len(metrics))
             plt.figure().set_figwidth(20)
 
-            plt.bar(x_axis - 0.2, infomap_metrics, 0.4, label='Infomap')
-            plt.bar(x_axis + 0.2, labelprop_metrics, 0.4, label='LabelPropagation')
-
+            plt.bar(x_axis - 0.2, infomapMetrics, 0.4, label='Infomap', color='blue')
+            plt.bar(x_axis + 0.2, labelPropagationMetrics, 0.4, label='Label Propagation', color='red')
 
             plt.xticks(x_axis, metrics, rotation=0)
             plt.xlabel("Quality Metric")
