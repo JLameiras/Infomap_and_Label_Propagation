@@ -6,6 +6,7 @@ import collections
 import infomap
 import numpy
 import statistics
+import matplotlib.pyplot as plt
 
 from networkx.algorithms.community.label_propagation import asyn_lpa_communities
 from networkx.algorithms.community.quality import partition_quality
@@ -169,7 +170,9 @@ class Analyser:
         print("     -> Coverage & Performance Analyzed")
         modularity = self.modularity(graph, report)
         print("     -> Modularity Analyzed")
-        triangle_mean, triangle_stdev = self.triangle_participation_ratio(graph, report)
+        triangle_mean = 0
+        triangle_stdev = 0
+        #triangle_mean, triangle_stdev = self.triangle_participation_ratio(graph, report)
         print("     -> Triangle Participation Analyzed")
 
         return {
@@ -181,8 +184,8 @@ class Analyser:
             "modularity": modularity,
             "coverage": coverage,
             "performance": performance,
-            "triangle_participation_mean": triangle_mean,
-            "triangle_participation_deviation": triangle_stdev
+            # "triangle_participation_mean": triangle_mean,
+            # "triangle_participation_deviation": triangle_stdev
         }
 
     def adapted_mancoridis_metric_and_expansion_metric(self, graph, report):
@@ -190,7 +193,7 @@ class Analyser:
         sumInterClusterDensity = 0
 
         expansion = []
-
+        numCommunities = len(graph.getPartition())
         for community in graph.getPartition():
             communityNodeNumber = len(community)
 
@@ -210,6 +213,7 @@ class Analyser:
 
             expansion += [interClusterEdges / communityNodeNumber]
 
+        numCommunities = len(graph.getPartition())
         report.write(
             "Adapted Mancoridis metric: Total Intra Cluster Density {} - Total Inter Cluster Density {} = {}\n".
             format(sumIntraClusterDensity,
@@ -222,7 +226,7 @@ class Analyser:
         mean = statistics.mean(expansion)
         report.write("Community Expansion Average: {}\n".format(stdev))
         report.write("Community Expansion Deviation: {}\n".format(mean))
-        return sumIntraClusterDensity, sumInterClusterDensity, sumIntraClusterDensity - sumInterClusterDensity, \
+        return sumIntraClusterDensity / numCommunities, sumInterClusterDensity / numCommunities, sumIntraClusterDensity / numCommunities - sumInterClusterDensity / numCommunities, \
             mean, stdev
 
     def partition_quality(self, graph, report):
@@ -249,7 +253,7 @@ class Analyser:
             if networkx.is_weighted(graph.getGraph()):
                 matrix[matrix != 0] = 1
 
-            triangleParticipationRatio += [numpy.trace(numpy.linalg.matrix_power(matrix, 3)) / 6]
+            triangleParticipationRatio += [numpy.trace(numpy.linalg.matrix_power(matrix, 3)) / 6 / len(community)]
 
         mean = statistics.mean(triangleParticipationRatio)
         stdev = 0
@@ -264,7 +268,7 @@ def main():
     report = open("report.txt", 'a')
     analyser = Analyser()
     
-    edgeListModels = ["data/LesMiserables.txt"]
+    edgeListModels = ["data/CollegeMsg.txt"]
 
     infoMapArgumentsList = ["--two-level --directed"]
     labelPropagationArgumentsList = [[None, None]]
@@ -287,15 +291,34 @@ def main():
         graph.classify(report)
         analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
 
-    for argumentLFR in argumentsLFR:
-        graph = Graph("LFR")
-        graph.createGraphLFR(argumentLFR)
-        graph.classify(report)
-        analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
-        analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
+    print(analysis)
+
+    # for argumentLFR in argumentsLFR:
+    #     graph = Graph("LFR")
+    #     graph.createGraphLFR(argumentLFR)
+    #     graph.classify(report)
+    #     analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
+    #     analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
 
     print(analysis)
-     
+    for results in analysis.values():
+        metrics = results['infomap'].keys()
+        infomap_metrics = [results['infomap'][metric] for metric in metrics]
+        labelprop_metrics = [results['label_prop'][metric] for metric in metrics]
+
+        x_axis = numpy.arange(len(metrics))
+        plt.figure().set_figwidth(20)
+
+        plt.bar(x_axis - 0.2, infomap_metrics, 0.4, label='Infomap')
+        plt.bar(x_axis + 0.2, labelprop_metrics, 0.4, label='LabelPropagation')
+
+
+        plt.xticks(x_axis, metrics, rotation=0)
+        plt.xlabel("Quality Metric")
+        plt.ylabel("Value")
+        plt.title("Comparative Analysis")
+        plt.legend()
+        plt.show()
 
 if __name__ == '__main__':
     main()
