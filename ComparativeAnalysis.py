@@ -239,6 +239,7 @@ class Analyser:
         for community in graph.getPartition():
 
             if len(community) < 4:
+                triangleParticipationRatio += [0]
                 continue     
 
             matrix = networkx.to_numpy_array(graph.getGraph().to_undirected().subgraph(community))
@@ -247,13 +248,11 @@ class Analyser:
 
             triangleParticipationRatio += [numpy.trace(numpy.linalg.matrix_power(matrix, 3)) / 6]
 
-        if len(triangleParticipationRatio) == 1:
-            report.write("Triangle Participation Ratio Average: {}\n".format(statistics.mean(triangleParticipationRatio)))
-            report.write("Less than 2 communities with triads found, no standard deviation calculated.")
-        elif len(triangleParticipationRatio) > 1:
-            report.write("Triangle Participation Ratio Average: {}\n".format(statistics.mean(triangleParticipationRatio)))
-            report.write("Triangle Participation Standard Deviation: {}\n".format(statistics.stdev(triangleParticipationRatio)))
-        
+        mean = statistics.mean(triangleParticipationRatio)
+        stdev = statistics.stdev(triangleParticipationRatio)
+        report.write("Triangle Participation Ratio Average: {}\n".format(mean))
+        report.write("Triangle Participation Standard Deviation: {}\n".format(stdev))
+        return mean, stdev
 
 
 def main():
@@ -272,8 +271,8 @@ def main():
     mu = [0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
     average_degree = [7]
     
-    argumentsLFR = list(list(combination) for combination in product(*[n, tau1, tau2, mu, average_degree])\
-                        if (combination[1] != 3 or combination[2] != 2))
+    argumentsLFR = list(list(combination) for combination in product(*[n, tau1, tau2, mu, average_degree]))
+                        #if (combination[1] != 3 or combination[2] != 2))
 
     analysis = dict()
 
