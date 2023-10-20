@@ -1,3 +1,4 @@
+from math import sqrt
 import networkx
 import collections
 import infomap
@@ -9,7 +10,7 @@ from networkx.algorithms.community.quality import partition_quality
 from networkx.algorithms.community import modularity
 
 from timeit import default_timer as timer
-from itertools import repeat
+from itertools import repeat, product
 
 
 class Graph:
@@ -57,7 +58,7 @@ class Graph:
     def createGraphLFR(self, argumentsLFR):
             
         self.graph = networkx.LFR_benchmark_graph(argumentsLFR[0], argumentsLFR[1], argumentsLFR[2],
-                                                    argumentsLFR[3], argumentsLFR[4], min_community=argumentsLFR[5])
+                                                    argumentsLFR[3], argumentsLFR[4], max_degree=30, max_iters=200000)
     
     def classify(self, report):
         analysis = "-----Analyses of the network \"" + self.getName()[6:-4] + "\"-----\n" +\
@@ -132,7 +133,6 @@ class Analyser:
 
     def LabelPropagation(self, graph, labelPropagationArguments):
         graph.setPartition([list(s) for s in asyn_lpa_communities(graph.getGraph(), labelPropagationArguments[0], labelPropagationArguments[1])])
-    
     def ratePartition(self, graph, report):
         self.adaptedMancoridisMetric(graph, report)
         self.partition_quality(graph, report)
@@ -145,6 +145,10 @@ class Analyser:
 
         for community in graph.getPartition():
             communityNodeNumber = len(community)
+
+            # Single node communities not taken into account
+            if len(community) == 1:
+                continue                
 
             # Also known as Internal Density
             internalEdges = graph.getGraph().subgraph(community).number_of_edges()
@@ -171,14 +175,23 @@ class Analyser:
         triangleParticipationRatio = []
 
         for community in graph.getPartition():
+
+            if len(community) < 4:
+                continue     
+
             matrix = networkx.to_numpy_array(graph.getGraph().to_undirected().subgraph(community))
             if networkx.is_weighted(graph.getGraph()):
                 matrix[matrix != 0] = 1
 
             triangleParticipationRatio += [numpy.trace(numpy.linalg.matrix_power(matrix, 3)) / 6]
 
-        report.write("Triangle Participation Ratio Average: {}\n".format(statistics.stdev(triangleParticipationRatio)))
-        report.write("Triangle Participation Standard Deviation: {}\n".format(statistics.mean(triangleParticipationRatio)))
+        if len(triangleParticipationRatio) == 1:
+            report.write("Triangle Participation Ratio Average: {}\n".format(statistics.mean(triangleParticipationRatio)))
+            report.write("Less than 2 communities with triads found, no standard deviation calculated.")
+        elif len(triangleParticipationRatio) > 1:
+            report.write("Triangle Participation Ratio Average: {}\n".format(statistics.mean(triangleParticipationRatio)))
+            report.write("Triangle Participation Standard Deviation: {}\n".format(statistics.stdev(triangleParticipationRatio)))
+        
 
 
 def main():
@@ -189,8 +202,16 @@ def main():
 
     infoMapArgumentsList = ["--two-level --directed"]
     labelPropagationArgumentsList = [[None, None]]
+
     # Tested options: n, tau1, tau2, mu, average_degree, min_community
-    argumentsLFR = []
+    n = [150]# 2000, 4000, 6000, 8000]
+    tau1 = [2, 3]
+    tau2 = [1.05, 2]
+    mu = [0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
+    average_degree = [7]
+    
+    argumentsLFR = list(list(combination) for combination in product(*[n, tau1, tau2, mu, average_degree])\
+                        if (combination[1] != 3 or combination[2] != 2))
 
     for edgeListModel in edgeListModels:
         graph = Graph(edgeListModel)
@@ -204,9 +225,6 @@ def main():
         graph.classify(report)
         analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
 
-    #TODO find way to print graph communities
-    #TODO draw graphs
-     
 
 if __name__ == '__main__':
     main()
