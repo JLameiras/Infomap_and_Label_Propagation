@@ -111,7 +111,7 @@ class Analyser:
 
             report.write("----------InfoMap Stats----------\n" +
                         "InfoMap Parameters: " +
-                         str(infoMapArguments[0]) + #FIXME Add missing parameters
+                         str(infoMapArguments[0]) +
                          "\nProcessing time: " +
                          str(end - start) +
                          "s" +
@@ -177,7 +177,7 @@ class Analyser:
         print("     -> Coverage & Performance Analyzed")
         modularity = self.modularity(graph, report)
         print("     -> Modularity Analyzed")
-        # Please note that due to limited hardware resources we were not able to test this metric
+        # Please note that due to limitations in our own hardware resources we were not able to test this metric
         # triangle_mean = 0
         # triangle_stdev = 0
         # triangle_mean, triangle_stdev = self.triangle_participation_ratio(graph, report)
