@@ -170,9 +170,10 @@ class Analyser:
         print("     -> Coverage & Performance Analyzed")
         modularity = self.modularity(graph, report)
         print("     -> Modularity Analyzed")
-        triangle_mean = 0
-        triangle_stdev = 0
-        #triangle_mean, triangle_stdev = self.triangle_participation_ratio(graph, report)
+        # Please note that due to limited hardware resources we were not able to test this metric
+        # triangle_mean = 0
+        # triangle_stdev = 0
+        # triangle_mean, triangle_stdev = self.triangle_participation_ratio(graph, report)
         print("     -> Triangle Participation Analyzed")
 
         return {
@@ -240,7 +241,8 @@ class Analyser:
         report.write("Modularity: {}\n".format(mod))
         return mod
 
-    def triangle_participation_ratio(self, graph, report):
+    # Please note that due to limited hardware resources we were not able to test this metric
+    def triangleParticipationRatio(self, graph, report):
         triangleParticipationRatio = []
 
         for community in graph.getPartition():
