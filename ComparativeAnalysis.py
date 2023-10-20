@@ -212,8 +212,7 @@ class Analyser:
             sumInterClusterDensity += interClusterEdges / maxPossibleInterClusterEdges
 
             expansion += [interClusterEdges / communityNodeNumber]
-
-        numCommunities = len(graph.getPartition())
+ 
         report.write(
             "Adapted Mancoridis metric: Total Intra Cluster Density {} - Total Inter Cluster Density {} = {}\n".
             format(sumIntraClusterDensity,
@@ -262,14 +261,36 @@ class Analyser:
         report.write("Triangle Participation Ratio Average: {}\n".format(mean))
         report.write("Triangle Participation Standard Deviation: {}\n".format(stdev))
         return mean, stdev
+    
+    def renderAnalysis(self, analysis):
+        print(analysis)
+
+        for results in analysis.values():
+            metrics = results['infomap'].keys()
+            infomap_metrics = [results['infomap'][metric] for metric in metrics]
+            labelprop_metrics = [results['label_prop'][metric] for metric in metrics]
+
+            x_axis = numpy.arange(len(metrics))
+            plt.figure().set_figwidth(20)
+
+            plt.bar(x_axis - 0.2, infomap_metrics, 0.4, label='Infomap')
+            plt.bar(x_axis + 0.2, labelprop_metrics, 0.4, label='LabelPropagation')
+
+
+            plt.xticks(x_axis, metrics, rotation=0)
+            plt.xlabel("Quality Metric")
+            plt.ylabel("Value")
+            plt.title("Comparative Analysis")
+            plt.legend()
+            plt.show()
 
 
 def main():
     report = open("report.txt", 'a')
     analyser = Analyser()
+    analysis = dict()
     
-    edgeListModels = ["data/CollegeMsg.txt"]
-
+    edgeListModels = ["data/LesMiserables.txt"]
     infoMapArgumentsList = ["--two-level --directed"]
     labelPropagationArgumentsList = [[None, None]]
 
@@ -279,19 +300,15 @@ def main():
     tau2 = [1.05, 2]
     mu = [0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
     average_degree = [7]
-    
     argumentsLFR = list(list(combination) for combination in product(*[n, tau1, tau2, mu, average_degree]))
                         #if (combination[1] != 3 or combination[2] != 2))
 
-    analysis = dict()
-
+    
     for edgeListModel in edgeListModels:
         graph = Graph(edgeListModel)
         graph.createGraphFromEdgeList(edgeListModel)
         graph.classify(report)
         analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
-
-    print(analysis)
 
     # for argumentLFR in argumentsLFR:
     #     graph = Graph("LFR")
@@ -300,25 +317,7 @@ def main():
     #     analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
     #     analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
 
-    print(analysis)
-    for results in analysis.values():
-        metrics = results['infomap'].keys()
-        infomap_metrics = [results['infomap'][metric] for metric in metrics]
-        labelprop_metrics = [results['label_prop'][metric] for metric in metrics]
-
-        x_axis = numpy.arange(len(metrics))
-        plt.figure().set_figwidth(20)
-
-        plt.bar(x_axis - 0.2, infomap_metrics, 0.4, label='Infomap')
-        plt.bar(x_axis + 0.2, labelprop_metrics, 0.4, label='LabelPropagation')
-
-
-        plt.xticks(x_axis, metrics, rotation=0)
-        plt.xlabel("Quality Metric")
-        plt.ylabel("Value")
-        plt.title("Comparative Analysis")
-        plt.legend()
-        plt.show()
+    analyser.renderAnalysis(analysis)
 
 if __name__ == '__main__':
     main()
