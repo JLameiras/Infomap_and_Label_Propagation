@@ -18,11 +18,13 @@ In order to install the necessary dependencies from the main directory run:
 
 Following this, to run the project from the main directory simply run the main python file as follows:
 
-> python3 ComparativeAnalysis.py
+> python3 ComparativeAnalysis.py mode
+
+Where 'mode' is 0 for the data's graphs and 1 for the LFR graphs visualization
 
 Important Remarks:
 
-If hardware resources are lacking creating the LFR graphs might be impractical.
-(See line 322 in ComparativeAnalysis.py)
+If hardware resources are lacking creating the LFR graphs might be very time consuming.
+(See line 323 in ComparativeAnalysis.py)
 Please note that the LFR graphs for testing were only created in our PCs after several trials, doing so
 with the specified parameters is a very resourse intensive task possibly stalling in some parameter combination

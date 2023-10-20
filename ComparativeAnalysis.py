@@ -1,5 +1,6 @@
 from math import sqrt
 import uuid
+import sys
 
 import networkx
 import collections
@@ -80,7 +81,7 @@ class Graph:
         if argumentsLFR != None:
             analysis += "LFR n, tau1, tau2, mu, average_degree: " + ', '.join(str(item) for item in argumentsLFR) + "\n"
 
-        # Too heavy to compute on Facebook's graph?
+        # We did non test this metric as our computers were not able to run it
         """
         degreeCentralities = networkx.betweenness_centrality(self.graph)
         degreeCentralityMean = statistics.mean(degreeCentralities)
@@ -152,7 +153,7 @@ class Analyser:
 
         report.write("%d modules with codelength %f found\n" % (infomapWrapper.numTopModules(),
                                                                 infomapWrapper.codelength))
-
+        # Report Section 2.3
         # Set the community of each node in the graph
         communities = {}
         for node in infomapWrapper.iterLeafNodes():
@@ -313,22 +314,24 @@ def main():
     average_degree = [7]
     argumentsLFR = list(list(combination) for combination in product(*[n, tau1, tau2, mu, average_degree])\
                         if (combination[1] != 3 or combination[2] != 2))
+    if int(sys.argv[1]) == 0:
+        for edgeListModel in edgeListModels:
+            graph = Graph(edgeListModel)
+            graph.createGraphFromEdgeList(edgeListModel)
+            graph.classify(report)
+            analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
+    elif int(sys.argv[1]) == 1:
+        for argumentLFR in argumentsLFR:
+            graph = Graph("LFR")
+            graph.createGraphLFR(argumentLFR)
+            graph.classify(report, argumentLFR)
+            analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
+            analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
+    else:
+        exit()
 
-    for edgeListModel in edgeListModels:
-        graph = Graph(edgeListModel)
-        graph.createGraphFromEdgeList(edgeListModel)
-        graph.classify(report)
-        analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
-    
-    """for argumentLFR in argumentsLFR:
-        graph = Graph("LFR")
-        graph.createGraphLFR(argumentLFR)
-        graph.classify(report, argumentLFR)
-        analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
-        analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
-    """
     analyser.renderAnalysis(analysis)
-
+    
 if __name__ == '__main__':
     main()
     
