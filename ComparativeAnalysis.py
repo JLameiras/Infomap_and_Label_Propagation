@@ -66,28 +66,29 @@ class Graph:
         analysis = "-----Analyses of the network \"" + self.getName()[6:-4] + "\"-----\n" +\
                         "Nodes: {}, Edges: {}, Self Loops: {}".format(self.graph.number_of_nodes(), self.graph.number_of_edges(), networkx.number_of_selfloops(self.graph)) + "\n" +\
                         "Graph Type: " + ("Directed and " if self.graph.is_directed() == True else "Undirected and ") +\
-                        ("Weighted" if networkx.is_weighted(self.graph) == True else "Non-Weighted") + "\n"                            
+                        ("Weighted" if networkx.is_weighted(self.graph) == True else "Non-Weighted") + "\n"      
 
-        # Decide which ones stay after getting results
-               
-        # results.write("Number of connected components: {}".format(a.getNumberOfConnectedComponents(graph)))
-        # results.write("Number of weakly connected components: {}".format(a.getNumberOfWeaklyConnectedComponents(graph)) if graph.is_directed() else "Weakly connected components not implemented for undirected case")
-        # results.write("Number of Isolates: {}".format(a.getNumberOfIsolates(graph)))
-        # results.write("Degree Centrality: {}".format(a.getDegreeCentrality(graph)))
-        # results.write("Betweeness Centrality: {}".format(a.getBetweenessCentrality(graph)))
-        # print(a.getNeighbours(graph,1))
-        # for component in a.getConnectedComponents(graph):
-        #     subgraph = Graph()
-        #     for neighbours in component:
-        #     print("Diameter of {} is: {}\n".format(component,"pass"))
-        # results.write("Closeness centrality: {}".format(a.getClosenessCentrality(graph)))
-        # results.write("Katz centrality: {}".format(a.getKatzCentrality(graph)))
-        # results.write("Pagerank: {}".format(a.getPageRank(graph)))
-        # results.write("Triangles: {}".format(a.getTriangles(graph)))
-        # results.write("All Pairs Shortest Path: {}".format(a.getAllPairsShortestPath(graph)))
-        # results.write("All Pairs Shortest Connectivity: {}".format(a.getAllPairsNodeConnectivity(graph)))
-        # results.write("Network bridges: {}".format(a.getBridges(graph)))
-        # results.write("All Connected Components: {}".format(a.getConnectedComponents(graph)))
+        #Calculate Graph's degree distribution
+        degrees = [val for (node, val) in self.graph.degree()]
+        degree_sequence = sorted(degrees, reverse=True)        
+
+        analysis += "Graph's Degrees mean: " + str(statistics.mean(degree_sequence)) + "\n"
+        analysis += "Graph's Degrees standard deviation: " + str(statistics.stdev(degree_sequence)) + "\n"
+        analysis += "Graph's Degrees quartiles: " + str(numpy.quantile(degree_sequence, [0,0.25,0.5,0.75,1])) + "\n"
+
+        degreeCentralities = networkx.betweenness_centrality(self.graph)
+        degreeCentralityMean = statistics.mean(degreeCentralities)
+        degreeCentralityStandardDeviation = statistics.stdev(degreeCentralities)
+
+        centralityOutliers = 0
+        threshold = 2
+
+        for degreeCentrality in degreeCentralities:
+            z_score = (degreeCentrality - degreeCentralityMean) / degreeCentralityStandardDeviation
+            if abs(z_score) > threshold and degreeCentrality > degreeCentralityMean: # Positive outliers
+                centralityOutliers += 1
+
+        analysis += "Number of degree betweenness centrality positive edge outliers: " + str(centralityOutliers) + "\n"
 
         report.write(analysis)
 
