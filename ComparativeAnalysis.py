@@ -215,10 +215,12 @@ class Analyser:
                     sumInterClusterDensity,
                     sumIntraClusterDensity - sumInterClusterDensity)
              )
-        stdev = statistics.stdev(expansion)
+        stdev = 0
+        if len(expansion) > 1:
+            stdev = statistics.stdev(expansion)
         mean = statistics.mean(expansion)
-        report.write("Community Expansion Average: {}\n".format(statistics.stdev(expansion)))
-        report.write("Community Expansion Deviation: {}\n".format(statistics.mean(expansion)))
+        report.write("Community Expansion Average: {}\n".format(stdev))
+        report.write("Community Expansion Deviation: {}\n".format(mean))
         return sumIntraClusterDensity, sumInterClusterDensity, sumIntraClusterDensity - sumInterClusterDensity, \
             mean, stdev
 
@@ -249,7 +251,9 @@ class Analyser:
             triangleParticipationRatio += [numpy.trace(numpy.linalg.matrix_power(matrix, 3)) / 6]
 
         mean = statistics.mean(triangleParticipationRatio)
-        stdev = statistics.stdev(triangleParticipationRatio)
+        stdev = 0
+        if len(triangleParticipationRatio) > 1:
+            stdev = statistics.stdev(triangleParticipationRatio)
         report.write("Triangle Participation Ratio Average: {}\n".format(mean))
         report.write("Triangle Participation Standard Deviation: {}\n".format(stdev))
         return mean, stdev
