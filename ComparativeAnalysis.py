@@ -63,7 +63,7 @@ class Graph:
         self.graph = networkx.LFR_benchmark_graph(argumentsLFR[0], argumentsLFR[1], argumentsLFR[2],
                                                     argumentsLFR[3], argumentsLFR[4], max_degree=30, max_iters=200000)
     
-    def classify(self, report):
+    def classify(self, report, argumentsLFR=None):
         analysis = "-----Analyses of the network \"" + self.getName()[6:-4] + "\"-----\n" +\
                         "Nodes: {}, Edges: {}, Self Loops: {}".format(self.graph.number_of_nodes(), self.graph.number_of_edges(), networkx.number_of_selfloops(self.graph)) + "\n" +\
                         "Graph Type: " + ("Directed and " if self.graph.is_directed() == True else "Undirected and ") +\
@@ -76,6 +76,9 @@ class Graph:
         analysis += "Graph's Degrees mean: " + str(statistics.mean(degreeSequence)) + "\n"
         analysis += "Graph's Degrees standard deviation: " + str(statistics.stdev(degreeSequence)) + "\n"
         analysis += "Graph's Degrees quartiles: " + str(numpy.quantile(degreeSequence, [0,0.25,0.5,0.75,1])) + "\n"
+
+        if argumentsLFR != None:
+            analysis += "LFR n, tau1, tau2, mu, average_degree: " + ', '.join(str(item) for item in argumentsLFR) + "\n"
 
         # Too heavy to compute on Facebook's graph?
         """
@@ -299,33 +302,31 @@ def main():
     analyser = Analyser()
     analysis = dict()
     
-    edgeListModels = ["data//facebook_combined.txt"]
+    edgeListModels = ["data//facebook_combined.txt", "data//bio-SC-TS.txt"]
     infoMapArgumentsList = [[True]]
     labelPropagationArgumentsList = [[None, None]]
 
-    # Tested options: n, tau1, tau2, mu, average_degree, min_community
-    n = [150]# 2000, 4000, 6000, 8000]
+    n = [170]
     tau1 = [2, 3]
     tau2 = [1.05, 2]
     mu = [0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
     average_degree = [7]
-    argumentsLFR = list(list(combination) for combination in product(*[n, tau1, tau2, mu, average_degree]))
-                        #if (combination[1] != 3 or combination[2] != 2))
+    argumentsLFR = list(list(combination) for combination in product(*[n, tau1, tau2, mu, average_degree])\
+                        if (combination[1] != 3 or combination[2] != 2))
 
-    
     for edgeListModel in edgeListModels:
         graph = Graph(edgeListModel)
         graph.createGraphFromEdgeList(edgeListModel)
         graph.classify(report)
         analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
-
-    # for argumentLFR in argumentsLFR:
-    #     graph = Graph("LFR")
-    #     graph.createGraphLFR(argumentLFR)
-    #     graph.classify(report)
-    #     analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
-    #     analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
-
+    
+    """for argumentLFR in argumentsLFR:
+        graph = Graph("LFR")
+        graph.createGraphLFR(argumentLFR)
+        graph.classify(report, argumentLFR)
+        analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
+        analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
+    """
     analyser.renderAnalysis(analysis)
 
 if __name__ == '__main__':
