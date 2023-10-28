@@ -10,12 +10,12 @@ import statistics
 import matplotlib.pyplot as plt
 
 from networkx.algorithms.community.label_propagation import asyn_lpa_communities
+from timeout_decorator import timeout
 from networkx.algorithms.community.quality import partition_quality
 from networkx.algorithms.community import modularity
 
 from timeit import default_timer as timer
 from itertools import repeat, product
-
 
 class Graph:
     def __init__(self, name):
@@ -59,6 +59,8 @@ class Graph:
             else:
                 self.graph.add_edge(*edge)
 
+    # Remove timeout if needed 
+    @timeout(600)
     def createGraphLFR(self, argumentsLFR):
             
         self.graph = networkx.LFR_benchmark_graph(argumentsLFR[0], argumentsLFR[1], argumentsLFR[2],
@@ -153,7 +155,8 @@ class Analyser:
 
         report.write("%d modules with codelength %f found\n" % (infomapWrapper.numTopModules(),
                                                                 infomapWrapper.codelength))
-        # Report Section 2.3
+        
+        # See Report Section 2.3
         # Set the community of each node in the graph
         communities = {}
         for node in infomapWrapper.iterLeafNodes():
@@ -185,7 +188,7 @@ class Analyser:
         # triangle_mean = 0
         # triangle_stdev = 0
         # triangle_mean, triangle_stdev = self.triangle_participation_ratio(graph, report)
-        print("     -> Triangle Participation Analyzed")
+        # print("     -> Triangle Participation Analyzed")
 
         return {
             "A. Mancoridis": diffSumIntraInterDensities,
@@ -277,8 +280,6 @@ class Analyser:
         return mean, stdev
     
     def renderAnalysis(self, analysis):
-        print(analysis)
-
         for results in analysis.values():
             metrics = results['infomap'].keys()
             infomapMetrics = [results['infomap'][metric] for metric in metrics]
@@ -312,8 +313,11 @@ def main():
     tau2 = [1.05, 2]
     mu = [0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
     average_degree = [7]
-    argumentsLFR = list(list(combination) for combination in product(*[n, tau1, tau2, mu, average_degree])\
-                        if (combination[1] != 3 or combination[2] != 2))
+    argumentsLFR = list(list(combination) for combination in product(*[n, tau1, tau2, mu, average_degree]))
+    
+    if len(sys.argv) < 2:
+        print("Please specify mode [0/1] as a command-line argument.")
+        exit()
     if int(sys.argv[1]) == 0:
         for edgeListModel in edgeListModels:
             graph = Graph(edgeListModel)
@@ -325,7 +329,6 @@ def main():
             graph = Graph("LFR")
             graph.createGraphLFR(argumentLFR)
             graph.classify(report, argumentLFR)
-            analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
             analysis[uuid.uuid4()] = analyser.runTestSuite(infoMapArgumentsList, labelPropagationArgumentsList, analyser, graph, report)
     else:
         exit()
