@@ -27,7 +27,7 @@ analysis variable in order to be used in the renderAnalysis method of the analys
 In order to install the necessary dependencies from the main directory run:
 
 ```bash
-npm install your-package-name
+npm install requirements.txt
 ```
 
 Following this, to run the project from the main directory simply run the main python file as follows:
