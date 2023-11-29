@@ -1,4 +1,4 @@
-# Comparative Analysis between Infomap and Label Propagation for Community Detection (Network Science @ IST)
+# Comparative Analysis between Infomap and Label Propagation for Community Detection
 
 ComparativeAnalysis.py generates statistics regarding the execution of the algorithms and the quality of their
 partition and outputs it into report.txt and stdout.
